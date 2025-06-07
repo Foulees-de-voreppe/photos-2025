@@ -7,46 +7,55 @@
     <style>
         body {
             font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
-            background-color: #e9ebee;
-            margin: 0;
-            padding: 20px;
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            gap: 20px; /* Espace entre les deux blocs */
+            background-color: #e9ebee; margin: 0; padding: 20px;
+            display: flex; flex-direction: column; align-items: center; gap: 20px;
         }
         .card {
-            background-color: white;
-            padding: 20px;
-            border-radius: 10px;
-            box-shadow: 0 1px 3px rgba(0, 0, 0, 0.12), 0 1px 2px rgba(0, 0, 0, 0.24);
-            text-align: center;
-            width: 100%;
-            max-width: 600px;
-            box-sizing: border-box;
+            background-color: white; padding: 20px; border-radius: 10px;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.12), 0 1px 2px rgba(0,0,0,0.24);
+            text-align: center; width: 100%; max-width: 600px; box-sizing: border-box;
         }
-        h1 {
-            color: #1c1e21;
-            margin-top: 0;
-            font-size: 24px;
-            border-bottom: 1px solid #ddd;
-            padding-bottom: 10px;
-            margin-bottom: 20px;
-        }
-        .hidden { display: none; }
+        h1 { color: #1c1e21; margin: 0 0 20px 0; font-size: 24px; border-bottom: 1px solid #ddd; padding-bottom: 10px; }
+        .hidden { display: none !important; }
         .button-group { margin-top: 15px; display: flex; gap: 10px; justify-content: center; }
-        button { padding: 12px 20px; font-size: 16px; border: none; border-radius: 6px; cursor: pointer; transition: background-color 0.3s ease; font-weight: bold; }
+        button { padding: 12px 20px; font-size: 16px; border: none; border-radius: 8px; cursor: pointer; transition: background-color 0.3s ease; font-weight: bold; }
         button:disabled { background-color: #ccc; cursor: not-allowed; }
         #status, #gallery-status { margin-top: 15px; font-weight: bold; min-height: 24px; color: #606770; }
-        
-        /* Styles spécifiques */
-        video, canvas, #photo-preview { max-width: 100%; border-radius: 8px; border: 1px solid #ddd; }
-        #snap, #send { background-color: #1877f2; color: white; }
-        #retake { background-color: #f5f6f7; color: #4b4f56; border: 1px solid #ccd0d5; }
 
-        /* Styles de la Galerie */
+        /* -- Styles de la capture -- */
+        #photo-preview { max-width: 100%; border-radius: 8px; border: 1px solid #ddd; }
+        #open-camera-btn { background-color: #1877f2; color: white; padding: 20px; font-size: 18px; }
+        #send { background-color: #42b72a; color: white; }
+        #retake { background-color: #f5f6f7; color: #4b4f56; border: 1px solid #ccd0d5; }
+        
+        /* -- NOUVEAU : Styles pour la vue Plein Écran -- */
+        #fullscreen-camera-view {
+            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+            background-color: #000; z-index: 1000;
+            display: flex; justify-content: center; align-items: center;
+        }
+        #fullscreen-video { width: 100%; height: 100%; object-fit: cover; }
+        #fullscreen-controls {
+            position: absolute; bottom: 0; left: 0; width: 100%;
+            padding: 20px; box-sizing: border-box;
+            background: linear-gradient(to top, rgba(0,0,0,0.7), transparent);
+            display: flex; justify-content: center; align-items: center; gap: 20px;
+        }
+        #snap-fullscreen-btn {
+            width: 70px; height: 70px; border-radius: 50%;
+            background-color: white; border: 4px solid rgba(255,255,255,0.5);
+            padding: 0;
+        }
+        #close-fullscreen-btn {
+            position: absolute; top: 20px; right: 20px;
+            background: rgba(0,0,0,0.4); color: white; font-size: 24px;
+            border: none; width: 44px; height: 44px; border-radius: 50%;
+            padding: 0; line-height: 44px;
+        }
+
+        /* -- Styles de la Galerie -- */
         #image-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(120px, 1fr)); gap: 15px; margin-top: 20px; }
-        #image-grid a { display: block; text-decoration: none; border-radius: 8px; overflow: hidden; box-shadow: 0 1px 3px rgba(0,0,0,0.1); transition: transform 0.2s, box-shadow 0.2s; }
+        #image-grid a { display: block; border-radius: 8px; overflow: hidden; box-shadow: 0 1px 3px rgba(0,0,0,0.1); transition: transform 0.2s, box-shadow 0.2s; }
         #image-grid img { width: 100%; height: 120px; object-fit: cover; display: block; }
         #image-grid a:hover { transform: scale(1.05); box-shadow: 0 4px 10px rgba(0,0,0,0.2); }
     </style>
@@ -56,13 +65,17 @@
     <!-- PARTIE HAUTE : Outil de capture -->
     <div id="capture-card" class="card">
         <h1>Prendre une photo</h1>
-        <div id="camera-view">
-            <video id="video" autoplay playsinline></video>
-            <div class="button-group"><button id="snap">Prendre la photo</button></div>
+        <!-- Vue initiale avec le bouton pour ouvrir la caméra -->
+        <div id="start-view">
+            <button id="open-camera-btn">Ouvrir la Caméra</button>
         </div>
+        <!-- Vue d'aperçu après la prise de photo -->
         <div id="preview-view" class="hidden">
             <img id="photo-preview" alt="Aperçu de la photo">
-            <div class="button-group"><button id="retake">Reprendre</button><button id="send">Envoyer</button></div>
+            <div class="button-group">
+                <button id="retake">Reprendre</button>
+                <button id="send">Envoyer</button>
+            </div>
         </div>
         <p id="status"></p>
     </div>
@@ -74,93 +87,94 @@
         <div id="image-grid"></div>
     </div>
     
+    <!-- NOUVEAU : Vue plein écran pour la caméra (initialement cachée) -->
+    <div id="fullscreen-camera-view" class="hidden">
+        <video id="fullscreen-video" autoplay playsinline></video>
+        <div id="fullscreen-controls">
+            <button id="snap-fullscreen-btn" title="Prendre la photo"></button>
+        </div>
+        <button id="close-fullscreen-btn" title="Fermer la caméra">×</button>
+    </div>
+
     <canvas id="canvas" class="hidden"></canvas>
 
     <script>
         const SCRIPT_URL = "https://script.google.com/macros/s/AKfycbzbdC-60zvJpOXhWBIgV3kdkIjI1u5M0m-5tajQrpWbrMOHfeNYWuBcflraX_5T4rr4/exec";
 
-        // Éléments de capture
-        const cameraView = document.getElementById('camera-view');
+        // Éléments
+        const startView = document.getElementById('start-view');
         const previewView = document.getElementById('preview-view');
-        const video = document.getElementById('video');
-        const canvas = document.getElementById('canvas');
         const photoPreview = document.getElementById('photo-preview');
         const statusMsg = document.getElementById('status');
-        const snapBtn = document.getElementById('snap');
-        const sendBtn = document.getElementById('send');
-        const retakeBtn = document.getElementById('retake');
-
-        // Éléments de la galerie
         const galleryStatus = document.getElementById('gallery-status');
         const imageGrid = document.getElementById('image-grid');
-        
+        const canvas = document.getElementById('canvas');
+
+        // Éléments de la vue plein écran
+        const fullscreenView = document.getElementById('fullscreen-camera-view');
+        const fullscreenVideo = document.getElementById('fullscreen-video');
+
+        // Boutons
+        const openCameraBtn = document.getElementById('open-camera-btn');
+        const sendBtn = document.getElementById('send');
+        const retakeBtn = document.getElementById('retake');
+        const snapFullscreenBtn = document.getElementById('snap-fullscreen-btn');
+        const closeFullscreenBtn = document.getElementById('close-fullscreen-btn');
+
         let photoDataUrl = null;
+        let stream = null; // Pour garder une référence au flux de la caméra
 
-        // Fonction pour charger et afficher la galerie
-        async function loadGallery() {
-            galleryStatus.textContent = "Chargement des images...";
-            imageGrid.innerHTML = ''; 
+        // --- Fonctions de la Caméra ---
 
+        async function openFullscreenCamera() {
+            statusMsg.textContent = "Démarrage de la caméra...";
             try {
-                const response = await fetch(SCRIPT_URL);
-                const result = await response.json();
-
-                if (result.status === "success" && result.data) {
-                    const images = result.data.reverse(); // Plus récentes en premier
-                    if (images.length === 0) {
-                        galleryStatus.textContent = "Aucune photo dans la galerie.";
-                    } else {
-                        galleryStatus.textContent = "";
-                        images.forEach(img => {
-                            const link = document.createElement('a');
-                            link.href = `https://drive.google.com/uc?export=view&id=${img.id}`;
-                            link.target = "_blank"; // Ouvre dans un nouvel onglet
-                            link.title = `Voir ${img.name} en grand`;
-
-                            const imgElement = document.createElement('img');
-                            imgElement.src = `https://drive.google.com/thumbnail?id=${img.id}&sz=w250`; // Vignette
-                            
-                            link.appendChild(imgElement);
-                            imageGrid.appendChild(link);
-                        });
-                    }
-                } else {
-                    throw new Error(result.message || 'Erreur inconnue.');
-                }
-            } catch (error) {
-                galleryStatus.textContent = `❌ Erreur de chargement de la galerie: ${error.message}`;
+                stream = await navigator.mediaDevices.getUserMedia({ 
+                    video: { facingMode: 'environment' } 
+                });
+                fullscreenVideo.srcObject = stream;
+                fullscreenView.classList.remove('hidden');
+                statusMsg.textContent = "";
+            } catch (err) {
+                statusMsg.textContent = "Erreur: Impossible d'accéder à la caméra.";
             }
         }
 
-        // Fonction pour initialiser la caméra
-        async function initCamera() {
-            statusMsg.textContent = "Chargement de la caméra...";
-            try {
-                const stream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: 'environment' } });
-                video.srcObject = stream;
-                statusMsg.textContent = "Veuillez prendre une photo.";
-            } catch (err) { statusMsg.textContent = "Erreur: Impossible d'accéder à la caméra."; }
+        function closeFullscreenCamera() {
+            if (stream) {
+                stream.getTracks().forEach(track => track.stop()); // Éteint la caméra
+            }
+            fullscreenView.classList.add('hidden');
         }
 
-        // --- Événements des boutons de capture ---
+        // --- Fonctions Principales ---
 
-        snapBtn.addEventListener('click', () => {
+        async function loadGallery() { /* ... (inchangé) */ }
+
+        function takePicture() {
             const context = canvas.getContext('2d');
-            canvas.width = video.videoWidth;
-            canvas.height = video.videoHeight;
-            context.drawImage(video, 0, 0, canvas.width, canvas.height);
+            canvas.width = fullscreenVideo.videoWidth;
+            canvas.height = fullscreenVideo.videoHeight;
+            context.drawImage(fullscreenVideo, 0, 0, canvas.width, canvas.height);
             photoDataUrl = canvas.toDataURL('image/jpeg');
+            
+            // Afficher l'aperçu dans la vue principale
             photoPreview.src = photoDataUrl;
-            cameraView.classList.add('hidden');
+            startView.classList.add('hidden');
             previewView.classList.remove('hidden');
-            statusMsg.textContent = "Vérifiez la photo avant de l'envoyer.";
-        });
+
+            // Fermer la vue plein écran
+            closeFullscreenCamera();
+        }
+
+        // --- Événements des boutons ---
+
+        openCameraBtn.addEventListener('click', openFullscreenCamera);
+        closeFullscreenBtn.addEventListener('click', closeFullscreenCamera);
+        snapFullscreenBtn.addEventListener('click', takePicture);
         
-        retakeBtn.addEventListener('click', () => {
-            cameraView.classList.remove('hidden');
-            previewView.classList.add('hidden');
-            statusMsg.textContent = "Veuillez prendre une photo.";
-        });
+        // Le bouton "Reprendre" ouvre aussi la caméra plein écran
+        retakeBtn.addEventListener('click', openFullscreenCamera);
 
         sendBtn.addEventListener('click', async () => {
             if (!photoDataUrl) return;
@@ -175,15 +189,15 @@
                     method: 'POST', redirect: 'follow', body: JSON.stringify(payload),
                     headers: { 'Content-Type': 'text/plain;charset=utf-8' },
                 });
-                statusMsg.textContent = "✅ Photo envoyée ! Rafraîchissement de la galerie...";
+                statusMsg.textContent = "✅ Photo envoyée !";
                 
-                // Réinitialise la vue caméra
-                cameraView.classList.remove('hidden');
+                // Revenir à la vue de départ
                 previewView.classList.add('hidden');
+                startView.classList.remove('hidden');
                 
-                // Rafraîchit la galerie pour afficher la nouvelle image
+                // Rafraîchir la galerie
                 await loadGallery(); 
-                statusMsg.textContent = "Prêt pour une nouvelle photo.";
+                setTimeout(() => { statusMsg.textContent = ""; }, 2000);
 
             } catch (error) { 
                 statusMsg.textContent = `❌ Erreur réseau.`;
@@ -193,14 +207,38 @@
             }
         });
 
-        // --- Démarrage de l'application ---
+        // Démarrage et fonctions inchangées
+        async function loadGallery() {
+            galleryStatus.textContent = "Chargement des images...";
+            imageGrid.innerHTML = ''; 
+            try {
+                const response = await fetch(SCRIPT_URL);
+                const result = await response.json();
+                if (result.status === "success" && result.data) {
+                    const images = result.data.reverse();
+                    if (images.length === 0) {
+                        galleryStatus.textContent = "Aucune photo dans la galerie.";
+                    } else {
+                        galleryStatus.textContent = "";
+                        images.forEach(img => {
+                            const link = document.createElement('a');
+                            link.href = `https://drive.google.com/uc?export=view&id=${img.id}`;
+                            link.target = "_blank";
+                            const imgElement = document.createElement('img');
+                            imgElement.src = `https://drive.google.com/thumbnail?id=${img.id}&sz=w250`;
+                            link.appendChild(imgElement);
+                            imageGrid.appendChild(link);
+                        });
+                    }
+                } else { throw new Error(result.message || 'Erreur inconnue.'); }
+            } catch (error) { galleryStatus.textContent = `❌ Erreur: ${error.message}`; }
+        }
+
         function initializeApp() {
-            initCamera();
             loadGallery();
         }
 
         initializeApp();
-
     </script>
 </body>
 </html>
