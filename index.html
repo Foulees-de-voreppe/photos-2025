@@ -28,7 +28,7 @@
         #send { background-color: #42b72a; color: white; }
         #retake { background-color: #f5f6f7; color: #4b4f56; border: 1px solid #ccd0d5; }
         
-        /* -- NOUVEAU : Styles pour la vue Plein Écran -- */
+        /* -- Styles pour la vue Plein Écran -- */
         #fullscreen-camera-view {
             position: fixed; top: 0; left: 0; width: 100%; height: 100%;
             background-color: #000; z-index: 1000;
@@ -39,12 +39,18 @@
             position: absolute; bottom: 0; left: 0; width: 100%;
             padding: 20px; box-sizing: border-box;
             background: linear-gradient(to top, rgba(0,0,0,0.7), transparent);
-            display: flex; justify-content: center; align-items: center; gap: 20px;
+            display: flex; justify-content: space-between; align-items: center;
         }
         #snap-fullscreen-btn {
             width: 70px; height: 70px; border-radius: 50%;
-            background-color: white; border: 4px solid rgba(255,255,255,0.5);
-            padding: 0;
+            background-color: white; border: 4px solid rgba(255,255,255,0.5); padding: 0;
+            margin: 0 auto; /* Pour le centrer */
+        }
+        /* NOUVEAU : Bouton de swap */
+        #swap-camera-btn {
+            background: rgba(255,255,255,0.2); color: white; font-size: 24px;
+            border: none; width: 50px; height: 50px; border-radius: 50%;
+            padding: 0; line-height: 50px;
         }
         #close-fullscreen-btn {
             position: absolute; top: 20px; right: 20px;
@@ -52,6 +58,8 @@
             border: none; width: 44px; height: 44px; border-radius: 50%;
             padding: 0; line-height: 44px;
         }
+        /* Placeholder pour équilibrer le flexbox */
+        .flex-placeholder { width: 50px; } 
 
         /* -- Styles de la Galerie -- */
         #image-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(120px, 1fr)); gap: 15px; margin-top: 20px; }
@@ -61,37 +69,19 @@
     </style>
 </head>
 <body>
-
-    <!-- PARTIE HAUTE : Outil de capture -->
-    <div id="capture-card" class="card">
-        <h1>Prendre une photo</h1>
-        <!-- Vue initiale avec le bouton pour ouvrir la caméra -->
-        <div id="start-view">
-            <button id="open-camera-btn">Ouvrir la Caméra</button>
-        </div>
-        <!-- Vue d'aperçu après la prise de photo -->
-        <div id="preview-view" class="hidden">
-            <img id="photo-preview" alt="Aperçu de la photo">
-            <div class="button-group">
-                <button id="retake">Reprendre</button>
-                <button id="send">Envoyer</button>
-            </div>
-        </div>
-        <p id="status"></p>
-    </div>
-
-    <!-- PARTIE BASSE : Galerie -->
-    <div id="gallery-card" class="card">
-        <h1>Galerie</h1>
-        <p id="gallery-status"></p>
-        <div id="image-grid"></div>
-    </div>
+    <!-- (Le HTML de capture-card et gallery-card reste inchangé) -->
+    <div id="capture-card" class="card">...</div>
+    <div id="gallery-card" class="card">...</div>
     
-    <!-- NOUVEAU : Vue plein écran pour la caméra (initialement cachée) -->
+    <!-- Vue plein écran pour la caméra (avec le nouveau bouton) -->
     <div id="fullscreen-camera-view" class="hidden">
         <video id="fullscreen-video" autoplay playsinline></video>
         <div id="fullscreen-controls">
+            <!-- NOUVEAU : Placeholder pour l'alignement -->
+            <div class="flex-placeholder"></div>
             <button id="snap-fullscreen-btn" title="Prendre la photo"></button>
+            <!-- NOUVEAU : Bouton pour changer de caméra -->
+            <button id="swap-camera-btn" title="Changer de caméra">🔄</button>
         </div>
         <button id="close-fullscreen-btn" title="Fermer la caméra">×</button>
     </div>
@@ -101,7 +91,82 @@
     <script>
         const SCRIPT_URL = "https://script.google.com/macros/s/AKfycbzbdC-60zvJpOXhWBIgV3kdkIjI1u5M0m-5tajQrpWbrMOHfeNYWuBcflraX_5T4rr4/exec";
 
-        // Éléments
+        // ... (Références aux éléments) ...
+        const fullscreenView = document.getElementById('fullscreen-camera-view');
+        const fullscreenVideo = document.getElementById('fullscreen-video');
+
+        // ... (Références aux boutons) ...
+        const snapFullscreenBtn = document.getElementById('snap-fullscreen-btn');
+        const closeFullscreenBtn = document.getElementById('close-fullscreen-btn');
+        // NOUVEAU : Référence au bouton de swap
+        const swapCameraBtn = document.getElementById('swap-camera-btn');
+
+        let photoDataUrl = null;
+        let stream = null;
+        // NOUVEAU : Variable pour garder en mémoire la caméra active
+        let currentFacingMode = 'environment';
+
+        // --- Fonctions de la Caméra ---
+
+        // Helper pour arrêter proprement le stream
+        function stopCurrentStream() {
+            if (stream) {
+                stream.getTracks().forEach(track => track.stop());
+            }
+        }
+
+        async function startCameraStream() {
+            stopCurrentStream(); // Toujours arrêter le précédent avant d'en démarrer un nouveau
+            try {
+                stream = await navigator.mediaDevices.getUserMedia({ 
+                    video: { facingMode: currentFacingMode } 
+                });
+                fullscreenVideo.srcObject = stream;
+            } catch (err) {
+                statusMsg.textContent = `Erreur: Impossible d'accéder à la caméra (${currentFacingMode}).`;
+                closeFullscreenCamera();
+            }
+        }
+
+        function openFullscreenCamera() {
+            fullscreenView.classList.remove('hidden');
+            startCameraStream();
+        }
+
+        function closeFullscreenCamera() {
+            stopCurrentStream();
+            fullscreenView.classList.add('hidden');
+        }
+
+        // NOUVEAU : Fonction pour basculer la caméra
+        function swapCamera() {
+            currentFacingMode = (currentFacingMode === 'environment') ? 'user' : 'environment';
+            startCameraStream();
+        }
+
+        // --- Fonctions Principales (inchangées pour la plupart) ---
+        function takePicture() {
+            // ... (code inchangé)
+        }
+        async function loadGallery() {
+            // ... (code inchangé)
+        }
+
+        // --- Événements des boutons ---
+        openCameraBtn.addEventListener('click', openFullscreenCamera);
+        closeFullscreenBtn.addEventListener('click', closeFullscreenCamera);
+        snapFullscreenBtn.addEventListener('click', takePicture);
+        retakeBtn.addEventListener('click', openFullscreenCamera);
+        // NOUVEAU : Événement pour le bouton de swap
+        swapCameraBtn.addEventListener('click', swapCamera);
+
+        sendBtn.addEventListener('click', async () => {
+            // ... (code inchangé)
+        });
+        
+        // --- Démarrage et code existant ---
+        // (Collez ici le reste de votre code JS qui n'a pas été montré ci-dessus)
+        // Pour être sûr, voici le code complet du script JS
         const startView = document.getElementById('start-view');
         const previewView = document.getElementById('preview-view');
         const photoPreview = document.getElementById('photo-preview');
@@ -109,47 +174,9 @@
         const galleryStatus = document.getElementById('gallery-status');
         const imageGrid = document.getElementById('image-grid');
         const canvas = document.getElementById('canvas');
-
-        // Éléments de la vue plein écran
-        const fullscreenView = document.getElementById('fullscreen-camera-view');
-        const fullscreenVideo = document.getElementById('fullscreen-video');
-
-        // Boutons
         const openCameraBtn = document.getElementById('open-camera-btn');
         const sendBtn = document.getElementById('send');
         const retakeBtn = document.getElementById('retake');
-        const snapFullscreenBtn = document.getElementById('snap-fullscreen-btn');
-        const closeFullscreenBtn = document.getElementById('close-fullscreen-btn');
-
-        let photoDataUrl = null;
-        let stream = null; // Pour garder une référence au flux de la caméra
-
-        // --- Fonctions de la Caméra ---
-
-        async function openFullscreenCamera() {
-            statusMsg.textContent = "Démarrage de la caméra...";
-            try {
-                stream = await navigator.mediaDevices.getUserMedia({ 
-                    video: { facingMode: 'environment' } 
-                });
-                fullscreenVideo.srcObject = stream;
-                fullscreenView.classList.remove('hidden');
-                statusMsg.textContent = "";
-            } catch (err) {
-                statusMsg.textContent = "Erreur: Impossible d'accéder à la caméra.";
-            }
-        }
-
-        function closeFullscreenCamera() {
-            if (stream) {
-                stream.getTracks().forEach(track => track.stop()); // Éteint la caméra
-            }
-            fullscreenView.classList.add('hidden');
-        }
-
-        // --- Fonctions Principales ---
-
-        async function loadGallery() { /* ... (inchangé) */ }
 
         function takePicture() {
             const context = canvas.getContext('2d');
@@ -157,31 +184,16 @@
             canvas.height = fullscreenVideo.videoHeight;
             context.drawImage(fullscreenVideo, 0, 0, canvas.width, canvas.height);
             photoDataUrl = canvas.toDataURL('image/jpeg');
-            
-            // Afficher l'aperçu dans la vue principale
             photoPreview.src = photoDataUrl;
             startView.classList.add('hidden');
             previewView.classList.remove('hidden');
-
-            // Fermer la vue plein écran
             closeFullscreenCamera();
         }
-
-        // --- Événements des boutons ---
-
-        openCameraBtn.addEventListener('click', openFullscreenCamera);
-        closeFullscreenBtn.addEventListener('click', closeFullscreenCamera);
-        snapFullscreenBtn.addEventListener('click', takePicture);
-        
-        // Le bouton "Reprendre" ouvre aussi la caméra plein écran
-        retakeBtn.addEventListener('click', openFullscreenCamera);
 
         sendBtn.addEventListener('click', async () => {
             if (!photoDataUrl) return;
             statusMsg.textContent = "Envoi en cours...";
-            sendBtn.disabled = true;
-            retakeBtn.disabled = true;
-
+            sendBtn.disabled = true; retakeBtn.disabled = true;
             const base64Data = photoDataUrl.split(',')[1];
             const payload = { imageData: base64Data, mimeType: 'image/jpeg' };
             try {
@@ -190,24 +202,14 @@
                     headers: { 'Content-Type': 'text/plain;charset=utf-8' },
                 });
                 statusMsg.textContent = "✅ Photo envoyée !";
-                
-                // Revenir à la vue de départ
                 previewView.classList.add('hidden');
                 startView.classList.remove('hidden');
-                
-                // Rafraîchir la galerie
                 await loadGallery(); 
                 setTimeout(() => { statusMsg.textContent = ""; }, 2000);
-
-            } catch (error) { 
-                statusMsg.textContent = `❌ Erreur réseau.`;
-            } finally { 
-                sendBtn.disabled = false; 
-                retakeBtn.disabled = false; 
-            }
+            } catch (error) { statusMsg.textContent = `❌ Erreur réseau.`;
+            } finally { sendBtn.disabled = false; retakeBtn.disabled = false; }
         });
 
-        // Démarrage et fonctions inchangées
         async function loadGallery() {
             galleryStatus.textContent = "Chargement des images...";
             imageGrid.innerHTML = ''; 
@@ -234,10 +236,7 @@
             } catch (error) { galleryStatus.textContent = `❌ Erreur: ${error.message}`; }
         }
 
-        function initializeApp() {
-            loadGallery();
-        }
-
+        function initializeApp() { loadGallery(); }
         initializeApp();
     </script>
 </body>
