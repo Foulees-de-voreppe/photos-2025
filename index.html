@@ -1,0 +1,172 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Prendre une photo</title>
+    <style>
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            height: 100vh;
+            margin: 0;
+            background-color: #f0f2f5;
+            color: #1c1e21;
+        }
+        #video-container {
+            border: 2px solid #ccc;
+            border-radius: 8px;
+            overflow: hidden;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+            position: relative;
+        }
+        video {
+            display: block;
+            width: 100%;
+            max-width: 400px;
+        }
+        canvas {
+            display: none; /* Le canvas est utilisé en coulisses */
+        }
+        .controls {
+            margin-top: 20px;
+            display: flex;
+            gap: 15px;
+        }
+        button {
+            padding: 12px 24px;
+            font-size: 16px;
+            font-weight: bold;
+            cursor: pointer;
+            border: none;
+            border-radius: 6px;
+            color: white;
+            transition: background-color 0.2s, transform 0.1s;
+        }
+        #capture-btn {
+            background-color: #1877f2;
+        }
+        #capture-btn:hover {
+            background-color: #166fe5;
+        }
+        #capture-btn:active {
+            transform: scale(0.98);
+        }
+        #status {
+            margin-top: 20px;
+            font-size: 1em;
+            color: #606770;
+            min-height: 24px;
+            text-align: center;
+        }
+        .spinner {
+            border: 4px solid rgba(0, 0, 0, 0.1);
+            width: 24px;
+            height: 24px;
+            border-radius: 50%;
+            border-left-color: #1877f2;
+            animation: spin 1s ease infinite;
+        }
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+    </style>
+</head>
+<body>
+
+    <div id="video-container">
+        <video id="video" autoplay></video>
+    </div>
+    
+    <canvas id="canvas"></canvas>
+
+    <div class="controls">
+        <button id="capture-btn">Prendre la photo et Envoyer</button>
+    </div>
+
+    <div id="status">Pointez la caméra et cliquez sur le bouton.</div>
+
+    <script>
+        // ============== CONFIGURATION ==============
+        // COLLEZ ICI L'URL DE VOTRE SCRIPT GOOGLE APPS DÉPLOYÉ
+        const SCRIPT_URL = "https://script.google.com/macros/s/AKfycbyJy4zCeqIm-wkvfL-VrlVt0q3tC0c6mmHJ9PjqaKrn_wY58BcYwTfr3i6XxxsKggDC/exec";
+        // ===========================================
+
+        const video = document.getElementById('video');
+        const canvas = document.getElementById('canvas');
+        const captureBtn = document.getElementById('capture-btn');
+        const statusDiv = document.getElementById('status');
+        const context = canvas.getContext('2d');
+
+        // Demander l'accès à la caméra
+        async function setupCamera() {
+            try {
+                const stream = await navigator.mediaDevices.getUserMedia({ 
+                    video: { facingMode: 'environment' } // 'environment' pour la caméra arrière, 'user' pour l'avant
+                });
+                video.srcObject = stream;
+                video.addEventListener('loadedmetadata', () => {
+                    canvas.width = video.videoWidth;
+                    canvas.height = video.videoHeight;
+                });
+            } catch (err) {
+                statusDiv.textContent = "Erreur : Impossible d'accéder à la caméra. Vérifiez les autorisations.";
+                console.error("Erreur d'accès à la caméra : ", err);
+            }
+        }
+
+        // Action du bouton
+        captureBtn.addEventListener('click', () => {
+            // 1. Dessiner l'image de la vidéo sur le canvas
+            context.drawImage(video, 0, 0, canvas.width, canvas.height);
+            
+            // 2. Obtenir l'image en format base64
+            const imageData = canvas.toDataURL('image/jpeg');
+
+            // 3. Envoyer les données au script Google
+            sendPicture(imageData);
+        });
+
+        async function sendPicture(imageData) {
+            statusDiv.innerHTML = '<div class="spinner"></div>'; // Affiche un indicateur de chargement
+            captureBtn.disabled = true;
+
+            try {
+                const response = await fetch(SCRIPT_URL, {
+                    method: 'POST',
+                    mode: 'cors', // Important
+                    headers: {
+                        'Content-Type': 'text/plain;charset=utf-s', // Éviter la pré-vérification CORS
+                    },
+                    body: JSON.stringify({ imageData: imageData })
+                });
+
+                const result = await response.json();
+                
+                if (result.status === 'success') {
+                    statusDiv.textContent = '✅ Photo envoyée avec succès !';
+                } else {
+                    throw new Error(result.message);
+                }
+
+            } catch (error) {
+                statusDiv.textContent = `❌ Erreur lors de l'envoi : ${error.message}`;
+                console.error('Erreur Fetch:', error);
+            } finally {
+                captureBtn.disabled = false;
+                // Réinitialiser le message après 5 secondes
+                setTimeout(() => {
+                    statusDiv.textContent = 'Prêt pour la photo suivante.';
+                }, 5000);
+            }
+        }
+
+        // Lancer la caméra au chargement de la page
+        setupCamera();
+    </script>
+</body>
+</html>
