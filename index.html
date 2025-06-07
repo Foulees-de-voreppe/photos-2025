@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Prendre et Envoyer une Photo</title>
+    <title>Photo Uploader & Galerie</title>
     <style>
         body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; background-color: #f0f2f5; display: flex; justify-content: center; align-items: center; min-height: 100vh; margin: 0; color: #333; }
         #app-container { background-color: white; padding: 20px; border-radius: 10px; box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1); text-align: center; width: 90%; max-width: 500px; }
@@ -13,59 +13,130 @@
         .button-group { margin-top: 15px; display: flex; gap: 10px; justify-content: center; }
         button { padding: 12px 20px; font-size: 16px; border: none; border-radius: 6px; cursor: pointer; transition: background-color 0.3s ease; font-weight: bold; }
         #snap, #send { background-color: #1877f2; color: white; }
-        #snap:hover, #send:hover { background-color: #166fe5; }
-        #retake { background-color: #e4e6eb; color: #333; }
-        #retake:hover { background-color: #d8dbdf; }
+        #retake, #back-to-camera { background-color: #e4e6eb; color: #333; }
+        #show-gallery { background-color: #42b72a; color: white; margin-top: 10px; } /* Bouton galerie */
         button:disabled { background-color: #ccc; cursor: not-allowed; }
-        #status { margin-top: 15px; font-weight: bold; min-height: 24px; }
+        #status, #gallery-status { margin-top: 15px; font-weight: bold; min-height: 24px; }
+        
+        /* Styles pour la galerie */
+        #gallery-view { width: 100%; }
+        #image-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(100px, 1fr)); gap: 10px; margin-top: 20px; }
+        #image-grid img { width: 100%; height: 100px; object-fit: cover; cursor: pointer; border: 2px solid transparent; transition: border-color 0.2s; }
+        #image-grid img:hover { border-color: #1877f2; }
     </style>
 </head>
 <body>
 
     <div id="app-container">
-        <h1>Photo Uploader</h1>
-        <div id="camera-view">
-            <video id="video" autoplay playsinline></video>
+        <!-- Vue principale (caméra ou aperçu) -->
+        <div id="main-view">
+            <h1>Photo Uploader</h1>
+            <div id="camera-view">
+                <video id="video" autoplay playsinline></video>
+                <div class="button-group">
+                    <button id="snap">Prendre la photo</button>
+                </div>
+            </div>
+            <div id="preview-view" class="hidden">
+                <img id="photo-preview" alt="Aperçu de la photo">
+                <div class="button-group">
+                    <button id="retake">Reprendre</button>
+                    <button id="send">Envoyer</button>
+                </div>
+            </div>
+            <p id="status"></p>
+            <button id="show-gallery">Voir la galerie</button>
+        </div>
+
+        <!-- Vue de la galerie (initialement cachée) -->
+        <div id="gallery-view" class="hidden">
+            <h1>Galerie</h1>
+            <p id="gallery-status">Chargement des images...</p>
+            <div id="image-grid"></div>
             <div class="button-group">
-                <button id="snap">Prendre la photo</button>
+                <button id="back-to-camera">Prendre une autre photo</button>
             </div>
         </div>
-        <div id="preview-view" class="hidden">
-            <img id="photo-preview" alt="Aperçu de la photo">
-            <div class="button-group">
-                <button id="retake">Reprendre</button>
-                <button id="send">Envoyer</button>
-            </div>
-        </div>
+        
         <canvas id="canvas" class="hidden"></canvas>
-        <p id="status"></p>
     </div>
 
     <script>
         const SCRIPT_URL = "https://script.google.com/macros/s/AKfycbzbdC-60zvJpOXhWBIgV3kdkIjI1u5M0m-5tajQrpWbrMOHfeNYWuBcflraX_5T4rr4/exec";
 
-        const video = document.getElementById('video');
-        const canvas = document.getElementById('canvas');
-        const snapBtn = document.getElementById('snap');
-        const sendBtn = document.getElementById('send');
-        const retakeBtn = document.getElementById('retake');
-        const photoPreview = document.getElementById('photo-preview');
-        const statusMsg = document.getElementById('status');
+        // Vues de l'application
+        const mainView = document.getElementById('main-view');
+        const galleryView = document.getElementById('gallery-view');
         const cameraView = document.getElementById('camera-view');
         const previewView = document.getElementById('preview-view');
         
+        // Éléments
+        const video = document.getElementById('video');
+        const canvas = document.getElementById('canvas');
+        const photoPreview = document.getElementById('photo-preview');
+        const statusMsg = document.getElementById('status');
+        const galleryStatus = document.getElementById('gallery-status');
+        const imageGrid = document.getElementById('image-grid');
+
+        // Boutons
+        const snapBtn = document.getElementById('snap');
+        const sendBtn = document.getElementById('send');
+        const retakeBtn = document.getElementById('retake');
+        const showGalleryBtn = document.getElementById('show-gallery');
+        const backToCameraBtn = document.getElementById('back-to-camera');
+        
         let photoDataUrl = null;
 
-        async function initCamera() {
+        // --- Fonctions de navigation ---
+        function showCameraView() {
+            mainView.classList.remove('hidden');
+            galleryView.classList.add('hidden');
             cameraView.classList.remove('hidden');
             previewView.classList.add('hidden');
+            initCamera();
+        }
+
+        async function showGallery() {
+            mainView.classList.add('hidden');
+            galleryView.classList.remove('hidden');
+            imageGrid.innerHTML = ''; // Vider la galerie précédente
+            galleryStatus.textContent = "Chargement des images...";
+
+            try {
+                // On appelle la fonction doGet du script
+                const response = await fetch(SCRIPT_URL);
+                const result = await response.json();
+
+                if (result.status === "success" && result.data) {
+                    if (result.data.length === 0) {
+                        galleryStatus.textContent = "Aucune photo dans la galerie pour le moment.";
+                    } else {
+                        galleryStatus.textContent = ""; // Cacher le message de statut
+                        result.data.forEach(img => {
+                            const imgElement = document.createElement('img');
+                            // URL spéciale pour afficher directement une image de Drive
+                            imgElement.src = `https://drive.google.com/uc?export=view&id=${img.id}`;
+                            imgElement.title = img.name;
+                            imgElement.onclick = () => window.open(imgElement.src, '_blank');
+                            imageGrid.appendChild(imgElement);
+                        });
+                    }
+                } else {
+                    throw new Error(result.message || 'Erreur lors du chargement de la galerie.');
+                }
+            } catch (error) {
+                galleryStatus.textContent = `❌ Erreur: ${error.message}`;
+            }
+        }
+
+        // --- Fonctions de la caméra ---
+        async function initCamera() {
             statusMsg.textContent = "Chargement de la caméra...";
             try {
                 const stream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: 'environment' } });
                 video.srcObject = stream;
                 statusMsg.textContent = "Veuillez prendre une photo.";
             } catch (err) {
-                console.error("Erreur d'accès à la caméra : ", err);
                 statusMsg.textContent = "Erreur: Impossible d'accéder à la caméra.";
             }
         }
@@ -82,15 +153,16 @@
             statusMsg.textContent = "Vérifiez la photo avant de l'envoyer.";
         });
         
-        retakeBtn.addEventListener('click', () => { initCamera(); });
+        retakeBtn.addEventListener('click', () => {
+            cameraView.classList.remove('hidden');
+            previewView.classList.add('hidden');
+            statusMsg.textContent = "Veuillez prendre une photo.";
+        });
 
+        // --- Événements des boutons ---
         sendBtn.addEventListener('click', async () => {
-            if (!photoDataUrl) {
-                statusMsg.textContent = "Aucune photo à envoyer.";
-                return;
-            }
-
-            statusMsg.textContent = "Envoi en cours, veuillez patienter...";
+            if (!photoDataUrl) return;
+            statusMsg.textContent = "Envoi en cours...";
             sendBtn.disabled = true;
             retakeBtn.disabled = true;
 
@@ -98,40 +170,27 @@
             const payload = { imageData: base64Data, mimeType: 'image/jpeg' };
 
             try {
-                // *** DÉBUT DU BLOC CORRIGÉ ET FINAL ***
-                // C'est la méthode la plus résiliente pour envoyer des données à Google Apps Script.
-                // On envoie le corps de la requête sous forme de chaîne de texte simple.
                 await fetch(SCRIPT_URL, {
                     method: 'POST',
-                    redirect: 'follow', // Suivre les redirections de Google
-                    body: JSON.stringify(payload), // Le corps est notre objet JSON converti en chaîne
-                    headers: {
-                        // On déclare explicitement le contenu comme du texte brut.
-                        'Content-Type': 'text/plain;charset=utf-8',
-                    },
+                    redirect: 'follow',
+                    body: JSON.stringify(payload),
+                    headers: { 'Content-Type': 'text/plain;charset=utf-8' },
                 });
-
-                // Puisque nous ne pouvons pas lire la réponse à cause des restrictions CORS,
-                // on affiche un message de succès et on se fie aux logs du script pour le débogage.
-                console.log("Requête envoyée. Vérification en cours côté serveur.");
-                statusMsg.textContent = "✅ Envoi terminé ! La photo devrait apparaître dans votre Drive.";
-                
-                setTimeout(() => {
-                    initCamera();
-                    sendBtn.disabled = false;
-                    retakeBtn.disabled = false;
-                }, 4000);
-                // *** FIN DU BLOC CORRIGÉ ET FINAL ***
-
+                statusMsg.textContent = "✅ Photo envoyée !";
+                setTimeout(() => { showCameraView(); }, 2000);
             } catch (error) {
-                console.error("Erreur réseau lors de l'envoi : ", error);
-                statusMsg.textContent = `❌ Erreur réseau lors de l'envoi : ${error.message}`;
+                statusMsg.textContent = `❌ Erreur réseau.`;
+            } finally {
                 sendBtn.disabled = false;
                 retakeBtn.disabled = false;
             }
         });
 
-        initCamera();
+        showGalleryBtn.addEventListener('click', showGallery);
+        backToCameraBtn.addEventListener('click', showCameraView);
+
+        // Démarrage initial
+        showCameraView();
     </script>
 </body>
 </html>
