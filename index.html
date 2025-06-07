@@ -3,170 +3,220 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Prendre une photo</title>
+    <title>Prendre et Envoyer une Photo</title>
     <style>
         body {
             font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            justify-content: center;
-            height: 100vh;
-            margin: 0;
             background-color: #f0f2f5;
-            color: #1c1e21;
-        }
-        #video-container {
-            border: 2px solid #ccc;
-            border-radius: 8px;
-            overflow: hidden;
-            box-shadow: 0 4px 12px rgba(0,0,0,0.1);
-            position: relative;
-        }
-        video {
-            display: block;
-            width: 100%;
-            max-width: 400px;
-        }
-        canvas {
-            display: none; /* Le canvas est utilisé en coulisses */
-        }
-        .controls {
-            margin-top: 20px;
             display: flex;
-            gap: 15px;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            margin: 0;
+            color: #333;
+        }
+        #app-container {
+            background-color: white;
+            padding: 20px;
+            border-radius: 10px;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+            text-align: center;
+            width: 90%;
+            max-width: 500px;
+        }
+        h1 {
+            color: #1c1e21;
+            margin-top: 0;
+        }
+        video, canvas, img {
+            max-width: 100%;
+            border-radius: 8px;
+            border: 1px solid #ddd;
+        }
+        .hidden {
+            display: none;
+        }
+        .button-group {
+            margin-top: 15px;
+            display: flex;
+            gap: 10px;
+            justify-content: center;
         }
         button {
-            padding: 12px 24px;
+            padding: 12px 20px;
             font-size: 16px;
-            font-weight: bold;
-            cursor: pointer;
             border: none;
             border-radius: 6px;
-            color: white;
-            transition: background-color 0.2s, transform 0.1s;
+            cursor: pointer;
+            transition: background-color 0.3s ease;
+            font-weight: bold;
         }
-        #capture-btn {
+        #snap, #send {
             background-color: #1877f2;
+            color: white;
         }
-        #capture-btn:hover {
+        #snap:hover, #send:hover {
             background-color: #166fe5;
         }
-        #capture-btn:active {
-            transform: scale(0.98);
+        #retake {
+            background-color: #e4e6eb;
+            color: #333;
+        }
+        #retake:hover {
+            background-color: #d8dbdf;
+        }
+        button:disabled {
+            background-color: #ccc;
+            cursor: not-allowed;
         }
         #status {
-            margin-top: 20px;
-            font-size: 1em;
-            color: #606770;
+            margin-top: 15px;
+            font-weight: bold;
             min-height: 24px;
-            text-align: center;
-        }
-        .spinner {
-            border: 4px solid rgba(0, 0, 0, 0.1);
-            width: 24px;
-            height: 24px;
-            border-radius: 50%;
-            border-left-color: #1877f2;
-            animation: spin 1s ease infinite;
-        }
-        @keyframes spin {
-            0% { transform: rotate(0deg); }
-            100% { transform: rotate(360deg); }
         }
     </style>
 </head>
 <body>
 
-    <div id="video-container">
-        <video id="video" autoplay></video>
-    </div>
-    
-    <canvas id="canvas"></canvas>
+    <div id="app-container">
+        <h1>Photo Uploader</h1>
 
-    <div class="controls">
-        <button id="capture-btn">Prendre la photo et Envoyer</button>
-    </div>
+        <!-- Étape 1: Vue de la caméra -->
+        <div id="camera-view">
+            <video id="video" autoplay playsinline></video>
+            <div class="button-group">
+                <button id="snap">Prendre la photo</button>
+            </div>
+        </div>
 
-    <div id="status">Pointez la caméra et cliquez sur le bouton.</div>
+        <!-- Étape 2: Aperçu de la photo et confirmation -->
+        <div id="preview-view" class="hidden">
+            <img id="photo-preview" alt="Aperçu de la photo">
+            <div class="button-group">
+                <button id="retake">Reprendre</button>
+                <button id="send">Envoyer</button>
+            </div>
+        </div>
+        
+        <!-- Toile pour dessiner l'image (non visible par l'utilisateur) -->
+        <canvas id="canvas" class="hidden"></canvas>
+
+        <p id="status"></p>
+    </div>
 
     <script>
-        // ============== CONFIGURATION ==============
-        // COLLEZ ICI L'URL DE VOTRE SCRIPT GOOGLE APPS DÉPLOYÉ
+        // L'URL de votre script Google Apps
         const SCRIPT_URL = "https://script.google.com/macros/s/AKfycbzbdC-60zvJpOXhWBIgV3kdkIjI1u5M0m-5tajQrpWbrMOHfeNYWuBcflraX_5T4rr4/exec";
-        // ===========================================
 
+        // Références aux éléments HTML
         const video = document.getElementById('video');
         const canvas = document.getElementById('canvas');
-        const captureBtn = document.getElementById('capture-btn');
-        const statusDiv = document.getElementById('status');
-        const context = canvas.getContext('2d');
+        const snapBtn = document.getElementById('snap');
+        const sendBtn = document.getElementById('send');
+        const retakeBtn = document.getElementById('retake');
+        const photoPreview = document.getElementById('photo-preview');
+        const statusMsg = document.getElementById('status');
+        const cameraView = document.getElementById('camera-view');
+        const previewView = document.getElementById('preview-view');
+        
+        let photoDataUrl = null;
 
-        // Demander l'accès à la caméra
-        async function setupCamera() {
+        // Fonction pour initialiser la caméra
+        async function initCamera() {
+            // Afficher la vue caméra, cacher l'aperçu
+            cameraView.classList.remove('hidden');
+            previewView.classList.add('hidden');
+            statusMsg.textContent = "Chargement de la caméra...";
+            
             try {
+                // Demander l'accès à la caméra arrière de préférence
                 const stream = await navigator.mediaDevices.getUserMedia({ 
-                    video: { facingMode: 'environment' } // 'environment' pour la caméra arrière, 'user' pour l'avant
+                    video: { facingMode: 'environment' } 
                 });
                 video.srcObject = stream;
-                video.addEventListener('loadedmetadata', () => {
-                    canvas.width = video.videoWidth;
-                    canvas.height = video.videoHeight;
-                });
+                statusMsg.textContent = "Veuillez prendre une photo.";
             } catch (err) {
-                statusDiv.textContent = "Erreur : Impossible d'accéder à la caméra. Vérifiez les autorisations.";
                 console.error("Erreur d'accès à la caméra : ", err);
+                statusMsg.textContent = "Erreur: Impossible d'accéder à la caméra.";
             }
         }
 
-        // Action du bouton
-        captureBtn.addEventListener('click', () => {
-            // 1. Dessiner l'image de la vidéo sur le canvas
+        // Événement pour prendre la photo
+        snapBtn.addEventListener('click', () => {
+            // Dessiner l'image de la vidéo sur le canvas
+            const context = canvas.getContext('2d');
+            canvas.width = video.videoWidth;
+            canvas.height = video.videoHeight;
             context.drawImage(video, 0, 0, canvas.width, canvas.height);
             
-            // 2. Obtenir l'image en format base64
-            const imageData = canvas.toDataURL('image/jpeg');
-
-            // 3. Envoyer les données au script Google
-            sendPicture(imageData);
+            // Convertir l'image du canvas en format Data URL (base64)
+            photoDataUrl = canvas.toDataURL('image/jpeg');
+            
+            // Afficher l'aperçu
+            photoPreview.src = photoDataUrl;
+            cameraView.classList.add('hidden');
+            previewView.classList.remove('hidden');
+            statusMsg.textContent = "Vérifiez la photo avant de l'envoyer.";
+        });
+        
+        // Événement pour reprendre la photo
+        retakeBtn.addEventListener('click', () => {
+            initCamera(); // Réinitialise simplement la vue
         });
 
-        async function sendPicture(imageData) {
-            statusDiv.innerHTML = '<div class="spinner"></div>'; // Affiche un indicateur de chargement
-            captureBtn.disabled = true;
+        // Événement pour envoyer la photo
+        sendBtn.addEventListener('click', async () => {
+            if (!photoDataUrl) {
+                statusMsg.textContent = "Aucune photo à envoyer.";
+                return;
+            }
+
+            // Mettre à jour l'interface pour l'envoi
+            statusMsg.textContent = "Envoi en cours, veuillez patienter...";
+            sendBtn.disabled = true;
+            retakeBtn.disabled = true;
+
+            // Préparer les données à envoyer
+            // On enlève le préfixe "data:image/jpeg;base64," pour n'envoyer que les données brutes
+            const base64Data = photoDataUrl.split(',')[1];
+            const payload = {
+                imageData: base64Data,
+                mimeType: 'image/jpeg'
+            };
 
             try {
+                // Envoi des données au script Google Apps via fetch
                 const response = await fetch(SCRIPT_URL, {
                     method: 'POST',
-                    mode: 'cors', // Important
+                    body: JSON.stringify(payload),
                     headers: {
-                        'Content-Type': 'text/plain;charset=utf-s', // Éviter la pré-vérification CORS
+                        'Content-Type': 'text/plain;charset=utf-8', // Requis pour contourner certaines limitations CORS de Google Scripts
                     },
-                    body: JSON.stringify({ imageData: imageData })
                 });
 
                 const result = await response.json();
-                
-                if (result.status === 'success') {
-                    statusDiv.textContent = '✅ Photo envoyée avec succès !';
+
+                if (result.status === "success") {
+                    statusMsg.textContent = "✅ Photo envoyée avec succès !";
+                    // Réinitialiser l'application après 2 secondes
+                    setTimeout(initCamera, 2000);
                 } else {
-                    throw new Error(result.message);
+                    throw new Error(result.message || 'Une erreur inconnue est survenue.');
                 }
 
             } catch (error) {
-                statusDiv.textContent = `❌ Erreur lors de l'envoi : ${error.message}`;
-                console.error('Erreur Fetch:', error);
+                console.error("Erreur lors de l'envoi : ", error);
+                statusMsg.textContent = `❌ Erreur lors de l'envoi : ${error.message}`;
             } finally {
-                captureBtn.disabled = false;
-                // Réinitialiser le message après 5 secondes
-                setTimeout(() => {
-                    statusDiv.textContent = 'Prêt pour la photo suivante.';
-                }, 5000);
+                // Réactiver les boutons en cas d'erreur
+                sendBtn.disabled = false;
+                retakeBtn.disabled = false;
             }
-        }
+        });
 
-        // Lancer la caméra au chargement de la page
-        setupCamera();
+        // Démarrer l'application en initialisant la caméra
+        initCamera();
+
     </script>
 </body>
 </html>
