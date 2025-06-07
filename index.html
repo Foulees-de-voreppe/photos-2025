@@ -9,7 +9,13 @@
         body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; background-color: #f0f2f5; display: flex; justify-content: center; align-items: center; min-height: 100vh; margin: 0; color: #333; }
         #app-container { background-color: white; padding: 20px; border-radius: 10px; box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1); text-align: center; width: 90%; max-width: 500px; transition: all 0.3s ease; }
         h1 { color: #1c1e21; margin-top: 0; }
-        .hidden { display: none; }
+        
+        /* --- LA CORRECTION EST ICI --- */
+        /* Cette classe doit retirer complètement l'élément de la page. */
+        .hidden {
+            display: none !important; /* On s'assure que rien d'autre ne peut annuler cette règle */
+        }
+        
         .button-group { margin-top: 15px; display: flex; gap: 10px; justify-content: center; }
         button { padding: 12px 20px; font-size: 16px; border: none; border-radius: 6px; cursor: pointer; transition: background-color 0.3s ease; font-weight: bold; }
         button:disabled { background-color: #ccc; cursor: not-allowed; }
@@ -27,7 +33,17 @@
         #image-grid img:hover { transform: scale(1.05); box-shadow: 0 4px 8px rgba(0,0,0,0.1); }
 
         /* --- Styles de la Lightbox (Visionneuse) --- */
-        #lightbox { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background-color: rgba(0, 0, 0, 0.85); display: flex; justify-content: center; align-items: center; z-index: 1000; }
+        /* Quand la lightbox n'a PAS la classe .hidden, elle s'affiche */
+        #lightbox {
+            display: flex; /* Utilisé pour centrer le contenu */
+            position: fixed;
+            top: 0; left: 0;
+            width: 100%; height: 100%;
+            background-color: rgba(0, 0, 0, 0.85);
+            justify-content: center;
+            align-items: center;
+            z-index: 1000; /* Doit être au-dessus de tout le reste */
+        }
         #lightbox-content { position: relative; max-width: 90%; max-height: 85%; }
         #lightbox-img { display: block; max-width: 100%; max-height: 100%; border-radius: 5px; box-shadow: 0 0 25px rgba(0,0,0,0.5); }
         .lightbox-nav { position: absolute; top: 50%; transform: translateY(-50%); background-color: rgba(0, 0, 0, 0.5); color: white; border: none; font-size: 32px; cursor: pointer; padding: 10px 15px; border-radius: 5px; user-select: none; transition: background-color 0.2s; }
@@ -40,29 +56,9 @@
 <body>
 
     <div id="app-container">
-        <!-- Vue principale -->
-        <div id="main-view">
-            <h1>Photo Uploader</h1>
-            <div id="camera-view">
-                <video id="video" autoplay playsinline></video>
-                <div class="button-group"><button id="snap">Prendre la photo</button></div>
-            </div>
-            <div id="preview-view" class="hidden">
-                <img id="photo-preview" alt="Aperçu de la photo">
-                <div class="button-group"><button id="retake">Reprendre</button><button id="send">Envoyer</button></div>
-            </div>
-            <p id="status"></p>
-            <button id="show-gallery">Voir la galerie</button>
-        </div>
-
-        <!-- Vue de la galerie -->
-        <div id="gallery-view" class="hidden">
-            <h1>Galerie</h1>
-            <p id="gallery-status"></p>
-            <div id="image-grid"></div>
-            <div class="button-group"><button id="back-to-camera">Prendre une autre photo</button></div>
-        </div>
-        
+        <!-- Contenu de l'application -->
+        <div id="main-view">...</div>
+        <div id="gallery-view" class="hidden">...</div>
         <canvas id="canvas" class="hidden"></canvas>
     </div>
 
@@ -70,13 +66,14 @@
     <div id="lightbox" class="hidden">
         <span id="lightbox-close">×</span>
         <button class="lightbox-nav" id="lightbox-prev">❮</button>
-        <div id="lightbox-content">
-            <img id="lightbox-img" src="">
-        </div>
+        <div id="lightbox-content"><img id="lightbox-img" src=""></div>
         <button class="lightbox-nav" id="lightbox-next">❯</button>
     </div>
 
     <script>
+        // Le JavaScript reste exactement le même que dans la version précédente.
+        // C'est lui qui ajoute et retire la classe ".hidden" à la div #lightbox.
+        // ... (collez ici le même bloc <script> que celui de la réponse précédente) ...
         const SCRIPT_URL = "https://script.google.com/macros/s/AKfycbzbdC-60zvJpOXhWBIgV3kdkIjI1u5M0m-5tajQrpWbrMOHfeNYWuBcflraX_5T4rr4/exec";
 
         // Vues de l'application
@@ -222,7 +219,7 @@
             photoDataUrl = canvas.toDataURL('image/jpeg');
             photoPreview.src = photoDataUrl;
             cameraView.classList.add('hidden');
-            previewView.classList.remove('hidden');
+            previewView.classList.add('hidden');
             statusMsg.textContent = "Vérifiez la photo avant de l'envoyer.";
         });
         retakeBtn.addEventListener('click', () => {
@@ -250,6 +247,7 @@
 
         // Démarrage initial
         showCameraView();
+
     </script>
 </body>
 </html>
