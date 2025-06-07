@@ -5,91 +5,31 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Prendre et Envoyer une Photo</title>
     <style>
-        body {
-            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
-            background-color: #f0f2f5;
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            min-height: 100vh;
-            margin: 0;
-            color: #333;
-        }
-        #app-container {
-            background-color: white;
-            padding: 20px;
-            border-radius: 10px;
-            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
-            text-align: center;
-            width: 90%;
-            max-width: 500px;
-        }
-        h1 {
-            color: #1c1e21;
-            margin-top: 0;
-        }
-        video, canvas, img {
-            max-width: 100%;
-            border-radius: 8px;
-            border: 1px solid #ddd;
-        }
-        .hidden {
-            display: none;
-        }
-        .button-group {
-            margin-top: 15px;
-            display: flex;
-            gap: 10px;
-            justify-content: center;
-        }
-        button {
-            padding: 12px 20px;
-            font-size: 16px;
-            border: none;
-            border-radius: 6px;
-            cursor: pointer;
-            transition: background-color 0.3s ease;
-            font-weight: bold;
-        }
-        #snap, #send {
-            background-color: #1877f2;
-            color: white;
-        }
-        #snap:hover, #send:hover {
-            background-color: #166fe5;
-        }
-        #retake {
-            background-color: #e4e6eb;
-            color: #333;
-        }
-        #retake:hover {
-            background-color: #d8dbdf;
-        }
-        button:disabled {
-            background-color: #ccc;
-            cursor: not-allowed;
-        }
-        #status {
-            margin-top: 15px;
-            font-weight: bold;
-            min-height: 24px;
-        }
+        body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; background-color: #f0f2f5; display: flex; justify-content: center; align-items: center; min-height: 100vh; margin: 0; color: #333; }
+        #app-container { background-color: white; padding: 20px; border-radius: 10px; box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1); text-align: center; width: 90%; max-width: 500px; }
+        h1 { color: #1c1e21; margin-top: 0; }
+        video, canvas, img { max-width: 100%; border-radius: 8px; border: 1px solid #ddd; }
+        .hidden { display: none; }
+        .button-group { margin-top: 15px; display: flex; gap: 10px; justify-content: center; }
+        button { padding: 12px 20px; font-size: 16px; border: none; border-radius: 6px; cursor: pointer; transition: background-color 0.3s ease; font-weight: bold; }
+        #snap, #send { background-color: #1877f2; color: white; }
+        #snap:hover, #send:hover { background-color: #166fe5; }
+        #retake { background-color: #e4e6eb; color: #333; }
+        #retake:hover { background-color: #d8dbdf; }
+        button:disabled { background-color: #ccc; cursor: not-allowed; }
+        #status { margin-top: 15px; font-weight: bold; min-height: 24px; }
     </style>
 </head>
 <body>
 
     <div id="app-container">
         <h1>Photo Uploader</h1>
-
-        <!-- Étape 1: Vue de la caméra -->
         <div id="camera-view">
             <video id="video" autoplay playsinline></video>
             <div class="button-group">
                 <button id="snap">Prendre la photo</button>
             </div>
         </div>
-
-        <!-- Étape 2: Aperçu de la photo et confirmation -->
         <div id="preview-view" class="hidden">
             <img id="photo-preview" alt="Aperçu de la photo">
             <div class="button-group">
@@ -97,18 +37,13 @@
                 <button id="send">Envoyer</button>
             </div>
         </div>
-        
-        <!-- Toile pour dessiner l'image (non visible par l'utilisateur) -->
         <canvas id="canvas" class="hidden"></canvas>
-
         <p id="status"></p>
     </div>
 
     <script>
-        // L'URL de votre script Google Apps
         const SCRIPT_URL = "https://script.google.com/macros/s/AKfycbzbdC-60zvJpOXhWBIgV3kdkIjI1u5M0m-5tajQrpWbrMOHfeNYWuBcflraX_5T4rr4/exec";
 
-        // Références aux éléments HTML
         const video = document.getElementById('video');
         const canvas = document.getElementById('canvas');
         const snapBtn = document.getElementById('snap');
@@ -121,16 +56,12 @@
         
         let photoDataUrl = null;
 
-        // Fonction pour initialiser la caméra
         async function initCamera() {
             cameraView.classList.remove('hidden');
             previewView.classList.add('hidden');
             statusMsg.textContent = "Chargement de la caméra...";
-            
             try {
-                const stream = await navigator.mediaDevices.getUserMedia({ 
-                    video: { facingMode: 'environment' } 
-                });
+                const stream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: 'environment' } });
                 video.srcObject = stream;
                 statusMsg.textContent = "Veuillez prendre une photo.";
             } catch (err) {
@@ -139,27 +70,20 @@
             }
         }
 
-        // Événement pour prendre la photo
         snapBtn.addEventListener('click', () => {
             const context = canvas.getContext('2d');
             canvas.width = video.videoWidth;
             canvas.height = video.videoHeight;
             context.drawImage(video, 0, 0, canvas.width, canvas.height);
-            
             photoDataUrl = canvas.toDataURL('image/jpeg');
-            
             photoPreview.src = photoDataUrl;
             cameraView.classList.add('hidden');
             previewView.classList.remove('hidden');
             statusMsg.textContent = "Vérifiez la photo avant de l'envoyer.";
         });
         
-        // Événement pour reprendre la photo
-        retakeBtn.addEventListener('click', () => {
-            initCamera();
-        });
+        retakeBtn.addEventListener('click', () => { initCamera(); });
 
-        // Événement pour envoyer la photo
         sendBtn.addEventListener('click', async () => {
             if (!photoDataUrl) {
                 statusMsg.textContent = "Aucune photo à envoyer.";
@@ -171,54 +95,43 @@
             retakeBtn.disabled = true;
 
             const base64Data = photoDataUrl.split(',')[1];
-            const payload = {
-                imageData: base64Data,
-                mimeType: 'image/jpeg'
-            };
+            const payload = { imageData: base64Data, mimeType: 'image/jpeg' };
 
             try {
-                // *** DÉBUT DU BLOC CORRIGÉ ***
-                // Envoi des données au script Google Apps via fetch
-                // Le mode 'no-cors' est essentiel pour contourner les problèmes de redirection de Google Script
-                // qui faisaient perdre les données de la requête POST.
-                const response = await fetch(SCRIPT_URL, {
+                // *** DÉBUT DU BLOC CORRIGÉ ET FINAL ***
+                // C'est la méthode la plus résiliente pour envoyer des données à Google Apps Script.
+                // On envoie le corps de la requête sous forme de chaîne de texte simple.
+                await fetch(SCRIPT_URL, {
                     method: 'POST',
-                    mode: 'no-cors', // Très important
-                    redirect: 'follow',
-                    body: JSON.stringify(payload),
+                    redirect: 'follow', // Suivre les redirections de Google
+                    body: JSON.stringify(payload), // Le corps est notre objet JSON converti en chaîne
                     headers: {
-                      // Note : Le Content-Type est envoyé mais peut ne pas être lu par le serveur en mode no-cors.
-                      // C'est pourquoi on parse le body en tant que texte brut côté Google Script.
-                      'Content-Type': 'application/json',
+                        // On déclare explicitement le contenu comme du texte brut.
+                        'Content-Type': 'text/plain;charset=utf-8',
                     },
                 });
 
-                // En mode 'no-cors', nous ne pouvons PAS lire la réponse du serveur.
-                // On considère donc l'envoi comme un succès si aucune erreur réseau n'est levée.
-                console.log("Requête envoyée. Vérifiez votre Google Drive et les logs du script.");
+                // Puisque nous ne pouvons pas lire la réponse à cause des restrictions CORS,
+                // on affiche un message de succès et on se fie aux logs du script pour le débogage.
+                console.log("Requête envoyée. Vérification en cours côté serveur.");
                 statusMsg.textContent = "✅ Envoi terminé ! La photo devrait apparaître dans votre Drive.";
                 
-                // On réinitialise l'interface après quelques secondes.
                 setTimeout(() => {
                     initCamera();
-                    // Réactiver les boutons pour la prochaine photo
                     sendBtn.disabled = false;
                     retakeBtn.disabled = false;
-                }, 4000); // 4 secondes
-                // *** FIN DU BLOC CORRIGÉ ***
+                }, 4000);
+                // *** FIN DU BLOC CORRIGÉ ET FINAL ***
 
             } catch (error) {
                 console.error("Erreur réseau lors de l'envoi : ", error);
                 statusMsg.textContent = `❌ Erreur réseau lors de l'envoi : ${error.message}`;
-                // Réactiver les boutons en cas d'erreur
                 sendBtn.disabled = false;
                 retakeBtn.disabled = false;
             }
         });
 
-        // Démarrer l'application
         initCamera();
-
     </script>
 </body>
 </html>
