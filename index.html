@@ -5,204 +5,134 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Photo Uploader & Galerie</title>
     <style>
-        /* --- Styles Généraux --- */
-        body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; background-color: #f0f2f5; display: flex; justify-content: center; align-items: center; min-height: 100vh; margin: 0; color: #333; }
-        #app-container { background-color: white; padding: 20px; border-radius: 10px; box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1); text-align: center; width: 90%; max-width: 500px; transition: all 0.3s ease; }
-        h1 { color: #1c1e21; margin-top: 0; }
-        
-        /* --- LA CORRECTION EST ICI --- */
-        /* Cette classe doit retirer complètement l'élément de la page. */
-        .hidden {
-            display: none !important; /* On s'assure que rien d'autre ne peut annuler cette règle */
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+            background-color: #e9ebee;
+            margin: 0;
+            padding: 20px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 20px; /* Espace entre les deux blocs */
         }
-        
+        .card {
+            background-color: white;
+            padding: 20px;
+            border-radius: 10px;
+            box-shadow: 0 1px 3px rgba(0, 0, 0, 0.12), 0 1px 2px rgba(0, 0, 0, 0.24);
+            text-align: center;
+            width: 100%;
+            max-width: 600px;
+            box-sizing: border-box;
+        }
+        h1 {
+            color: #1c1e21;
+            margin-top: 0;
+            font-size: 24px;
+            border-bottom: 1px solid #ddd;
+            padding-bottom: 10px;
+            margin-bottom: 20px;
+        }
+        .hidden { display: none; }
         .button-group { margin-top: 15px; display: flex; gap: 10px; justify-content: center; }
         button { padding: 12px 20px; font-size: 16px; border: none; border-radius: 6px; cursor: pointer; transition: background-color 0.3s ease; font-weight: bold; }
         button:disabled { background-color: #ccc; cursor: not-allowed; }
-        #status, #gallery-status { margin-top: 15px; font-weight: bold; min-height: 24px; }
+        #status, #gallery-status { margin-top: 15px; font-weight: bold; min-height: 24px; color: #606770; }
         
-        /* --- Styles Spécifiques aux Vues --- */
+        /* Styles spécifiques */
         video, canvas, #photo-preview { max-width: 100%; border-radius: 8px; border: 1px solid #ddd; }
         #snap, #send { background-color: #1877f2; color: white; }
-        #retake, #back-to-camera { background-color: #e4e6eb; color: #333; }
-        #show-gallery { background-color: #42b72a; color: white; margin-top: 10px; }
+        #retake { background-color: #f5f6f7; color: #4b4f56; border: 1px solid #ccd0d5; }
 
-        /* --- Styles de la Galerie --- */
-        #image-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(100px, 1fr)); gap: 10px; margin-top: 20px; }
-        #image-grid img { width: 100%; height: 100px; object-fit: cover; cursor: pointer; border: 2px solid #eee; border-radius: 8px; transition: transform 0.2s, box-shadow 0.2s; }
-        #image-grid img:hover { transform: scale(1.05); box-shadow: 0 4px 8px rgba(0,0,0,0.1); }
-
-        /* --- Styles de la Lightbox (Visionneuse) --- */
-        /* Quand la lightbox n'a PAS la classe .hidden, elle s'affiche */
-        #lightbox {
-            display: flex; /* Utilisé pour centrer le contenu */
-            position: fixed;
-            top: 0; left: 0;
-            width: 100%; height: 100%;
-            background-color: rgba(0, 0, 0, 0.85);
-            justify-content: center;
-            align-items: center;
-            z-index: 1000; /* Doit être au-dessus de tout le reste */
-        }
-        #lightbox-content { position: relative; max-width: 90%; max-height: 85%; }
-        #lightbox-img { display: block; max-width: 100%; max-height: 100%; border-radius: 5px; box-shadow: 0 0 25px rgba(0,0,0,0.5); }
-        .lightbox-nav { position: absolute; top: 50%; transform: translateY(-50%); background-color: rgba(0, 0, 0, 0.5); color: white; border: none; font-size: 32px; cursor: pointer; padding: 10px 15px; border-radius: 5px; user-select: none; transition: background-color 0.2s; }
-        .lightbox-nav:hover { background-color: rgba(0, 0, 0, 0.8); }
-        #lightbox-prev { left: 15px; }
-        #lightbox-next { right: 15px; }
-        #lightbox-close { position: absolute; top: 15px; right: 20px; color: white; font-size: 40px; font-weight: bold; cursor: pointer; user-select: none; text-shadow: 0 1px 3px black; }
+        /* Styles de la Galerie */
+        #image-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(120px, 1fr)); gap: 15px; margin-top: 20px; }
+        #image-grid a { display: block; text-decoration: none; border-radius: 8px; overflow: hidden; box-shadow: 0 1px 3px rgba(0,0,0,0.1); transition: transform 0.2s, box-shadow 0.2s; }
+        #image-grid img { width: 100%; height: 120px; object-fit: cover; display: block; }
+        #image-grid a:hover { transform: scale(1.05); box-shadow: 0 4px 10px rgba(0,0,0,0.2); }
     </style>
 </head>
 <body>
 
-    <div id="app-container">
-        <!-- Contenu de l'application -->
-        <div id="main-view">...</div>
-        <div id="gallery-view" class="hidden">...</div>
-        <canvas id="canvas" class="hidden"></canvas>
+    <!-- PARTIE HAUTE : Outil de capture -->
+    <div id="capture-card" class="card">
+        <h1>Prendre une photo</h1>
+        <div id="camera-view">
+            <video id="video" autoplay playsinline></video>
+            <div class="button-group"><button id="snap">Prendre la photo</button></div>
+        </div>
+        <div id="preview-view" class="hidden">
+            <img id="photo-preview" alt="Aperçu de la photo">
+            <div class="button-group"><button id="retake">Reprendre</button><button id="send">Envoyer</button></div>
+        </div>
+        <p id="status"></p>
     </div>
 
-    <!-- HTML de la Lightbox (initialement caché) -->
-    <div id="lightbox" class="hidden">
-        <span id="lightbox-close">×</span>
-        <button class="lightbox-nav" id="lightbox-prev">❮</button>
-        <div id="lightbox-content"><img id="lightbox-img" src=""></div>
-        <button class="lightbox-nav" id="lightbox-next">❯</button>
+    <!-- PARTIE BASSE : Galerie -->
+    <div id="gallery-card" class="card">
+        <h1>Galerie</h1>
+        <p id="gallery-status"></p>
+        <div id="image-grid"></div>
     </div>
+    
+    <canvas id="canvas" class="hidden"></canvas>
 
     <script>
-        // Le JavaScript reste exactement le même que dans la version précédente.
-        // C'est lui qui ajoute et retire la classe ".hidden" à la div #lightbox.
-        // ... (collez ici le même bloc <script> que celui de la réponse précédente) ...
         const SCRIPT_URL = "https://script.google.com/macros/s/AKfycbzbdC-60zvJpOXhWBIgV3kdkIjI1u5M0m-5tajQrpWbrMOHfeNYWuBcflraX_5T4rr4/exec";
 
-        // Vues de l'application
-        const mainView = document.getElementById('main-view');
-        const galleryView = document.getElementById('gallery-view');
+        // Éléments de capture
         const cameraView = document.getElementById('camera-view');
         const previewView = document.getElementById('preview-view');
-        
-        // Éléments
         const video = document.getElementById('video');
         const canvas = document.getElementById('canvas');
         const photoPreview = document.getElementById('photo-preview');
         const statusMsg = document.getElementById('status');
-        const galleryStatus = document.getElementById('gallery-status');
-        const imageGrid = document.getElementById('image-grid');
-
-        // Boutons
         const snapBtn = document.getElementById('snap');
         const sendBtn = document.getElementById('send');
         const retakeBtn = document.getElementById('retake');
-        const showGalleryBtn = document.getElementById('show-gallery');
-        const backToCameraBtn = document.getElementById('back-to-camera');
 
-        // --- NOUVEAU : Éléments de la Lightbox ---
-        const lightbox = document.getElementById('lightbox');
-        const lightboxImg = document.getElementById('lightbox-img');
-        const lightboxClose = document.getElementById('lightbox-close');
-        const lightboxPrev = document.getElementById('lightbox-prev');
-        const lightboxNext = document.getElementById('lightbox-next');
-        let currentImageIndex = 0;
-        let galleryImages = [];
-
-        // --- Fonctions de navigation ---
-        function showCameraView() { /* ... (inchangé) */ }
-        async function showGallery() { /* ... (modifié) */ }
-
-        // --- Fonctions de la Lightbox ---
-        function openLightbox(index) {
-            currentImageIndex = index;
-            showImageInLightbox();
-            lightbox.classList.remove('hidden');
-        }
-
-        function closeLightbox() {
-            lightbox.classList.add('hidden');
-        }
+        // Éléments de la galerie
+        const galleryStatus = document.getElementById('gallery-status');
+        const imageGrid = document.getElementById('image-grid');
         
-        function showNextImage() {
-            if (currentImageIndex < galleryImages.length - 1) {
-                currentImageIndex++;
-                showImageInLightbox();
-            }
-        }
+        let photoDataUrl = null;
 
-        function showPrevImage() {
-            if (currentImageIndex > 0) {
-                currentImageIndex--;
-                showImageInLightbox();
-            }
-        }
-
-        function showImageInLightbox() {
-            const imgId = galleryImages[currentImageIndex].id;
-            // On affiche une version de taille moyenne pour un chargement rapide
-            lightboxImg.src = `https://drive.google.com/thumbnail?id=${imgId}&sz=w1024`; 
-            lightboxPrev.style.display = currentImageIndex === 0 ? 'none' : 'block';
-            lightboxNext.style.display = currentImageIndex === galleryImages.length - 1 ? 'none' : 'block';
-        }
-
-        // --- Fonctions principales (avec modifications) ---
-
-        function showCameraView() {
-            mainView.classList.remove('hidden');
-            galleryView.classList.add('hidden');
-            cameraView.classList.remove('hidden');
-            previewView.classList.add('hidden');
-            initCamera();
-        }
-
-        async function showGallery() {
-            mainView.classList.add('hidden');
-            galleryView.classList.remove('hidden');
-            imageGrid.innerHTML = ''; 
+        // Fonction pour charger et afficher la galerie
+        async function loadGallery() {
             galleryStatus.textContent = "Chargement des images...";
+            imageGrid.innerHTML = ''; 
 
             try {
                 const response = await fetch(SCRIPT_URL);
                 const result = await response.json();
 
                 if (result.status === "success" && result.data) {
-                    galleryImages = result.data.reverse(); // Affiche les plus récentes en premier
-                    if (galleryImages.length === 0) {
-                        galleryStatus.textContent = "Aucune photo dans la galerie pour le moment.";
+                    const images = result.data.reverse(); // Plus récentes en premier
+                    if (images.length === 0) {
+                        galleryStatus.textContent = "Aucune photo dans la galerie.";
                     } else {
                         galleryStatus.textContent = "";
-                        galleryImages.forEach((img, index) => {
+                        images.forEach(img => {
+                            const link = document.createElement('a');
+                            link.href = `https://drive.google.com/uc?export=view&id=${img.id}`;
+                            link.target = "_blank"; // Ouvre dans un nouvel onglet
+                            link.title = `Voir ${img.name} en grand`;
+
                             const imgElement = document.createElement('img');
-                            // ** LA CORRECTION EST ICI **
-                            // On utilise l'URL spéciale pour les vignettes de Google Drive
-                            imgElement.src = `https://drive.google.com/thumbnail?id=${img.id}&sz=w200`; // sz=w200 -> thumbnail de 200px de large
-                            imgElement.title = img.name;
-                            // ** LA NOUVEAUTÉ EST ICI **
-                            // On ajoute l'événement pour ouvrir la lightbox
-                            imgElement.onclick = () => openLightbox(index);
-                            imageGrid.appendChild(imgElement);
+                            imgElement.src = `https://drive.google.com/thumbnail?id=${img.id}&sz=w250`; // Vignette
+                            
+                            link.appendChild(imgElement);
+                            imageGrid.appendChild(link);
                         });
                     }
                 } else {
-                    throw new Error(result.message || 'Erreur lors du chargement de la galerie.');
+                    throw new Error(result.message || 'Erreur inconnue.');
                 }
             } catch (error) {
-                galleryStatus.textContent = `❌ Erreur: ${error.message}`;
+                galleryStatus.textContent = `❌ Erreur de chargement de la galerie: ${error.message}`;
             }
         }
 
-        async function initCamera() { /* ... (inchangé) */ }
-        snapBtn.addEventListener('click', () => { /* ... (inchangé) */ });
-        retakeBtn.addEventListener('click', () => { /* ... (inchangé) */ });
-        sendBtn.addEventListener('click', async () => { /* ... (inchangé) */ });
-
-        // --- Événements des boutons ---
-        showGalleryBtn.addEventListener('click', showGallery);
-        backToCameraBtn.addEventListener('click', showCameraView);
-        // NOUVEAU : Événements de la lightbox
-        lightboxClose.addEventListener('click', closeLightbox);
-        lightboxNext.addEventListener('click', showNextImage);
-        lightboxPrev.addEventListener('click', showPrevImage);
-
-        // --- Fonctions inchangées ---
+        // Fonction pour initialiser la caméra
         async function initCamera() {
             statusMsg.textContent = "Chargement de la caméra...";
             try {
@@ -211,6 +141,9 @@
                 statusMsg.textContent = "Veuillez prendre une photo.";
             } catch (err) { statusMsg.textContent = "Erreur: Impossible d'accéder à la caméra."; }
         }
+
+        // --- Événements des boutons de capture ---
+
         snapBtn.addEventListener('click', () => {
             const context = canvas.getContext('2d');
             canvas.width = video.videoWidth;
@@ -219,19 +152,22 @@
             photoDataUrl = canvas.toDataURL('image/jpeg');
             photoPreview.src = photoDataUrl;
             cameraView.classList.add('hidden');
-            previewView.classList.add('hidden');
+            previewView.classList.remove('hidden');
             statusMsg.textContent = "Vérifiez la photo avant de l'envoyer.";
         });
+        
         retakeBtn.addEventListener('click', () => {
             cameraView.classList.remove('hidden');
             previewView.classList.add('hidden');
             statusMsg.textContent = "Veuillez prendre une photo.";
         });
+
         sendBtn.addEventListener('click', async () => {
             if (!photoDataUrl) return;
             statusMsg.textContent = "Envoi en cours...";
             sendBtn.disabled = true;
             retakeBtn.disabled = true;
+
             const base64Data = photoDataUrl.split(',')[1];
             const payload = { imageData: base64Data, mimeType: 'image/jpeg' };
             try {
@@ -239,14 +175,31 @@
                     method: 'POST', redirect: 'follow', body: JSON.stringify(payload),
                     headers: { 'Content-Type': 'text/plain;charset=utf-8' },
                 });
-                statusMsg.textContent = "✅ Photo envoyée !";
-                setTimeout(() => { showCameraView(); }, 2000);
-            } catch (error) { statusMsg.textContent = `❌ Erreur réseau.`;
-            } finally { sendBtn.disabled = false; retakeBtn.disabled = false; }
+                statusMsg.textContent = "✅ Photo envoyée ! Rafraîchissement de la galerie...";
+                
+                // Réinitialise la vue caméra
+                cameraView.classList.remove('hidden');
+                previewView.classList.add('hidden');
+                
+                // Rafraîchit la galerie pour afficher la nouvelle image
+                await loadGallery(); 
+                statusMsg.textContent = "Prêt pour une nouvelle photo.";
+
+            } catch (error) { 
+                statusMsg.textContent = `❌ Erreur réseau.`;
+            } finally { 
+                sendBtn.disabled = false; 
+                retakeBtn.disabled = false; 
+            }
         });
 
-        // Démarrage initial
-        showCameraView();
+        // --- Démarrage de l'application ---
+        function initializeApp() {
+            initCamera();
+            loadGallery();
+        }
+
+        initializeApp();
 
     </script>
 </body>
