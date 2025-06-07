@@ -123,13 +123,11 @@
 
         // Fonction pour initialiser la caméra
         async function initCamera() {
-            // Afficher la vue caméra, cacher l'aperçu
             cameraView.classList.remove('hidden');
             previewView.classList.add('hidden');
             statusMsg.textContent = "Chargement de la caméra...";
             
             try {
-                // Demander l'accès à la caméra arrière de préférence
                 const stream = await navigator.mediaDevices.getUserMedia({ 
                     video: { facingMode: 'environment' } 
                 });
@@ -143,16 +141,13 @@
 
         // Événement pour prendre la photo
         snapBtn.addEventListener('click', () => {
-            // Dessiner l'image de la vidéo sur le canvas
             const context = canvas.getContext('2d');
             canvas.width = video.videoWidth;
             canvas.height = video.videoHeight;
             context.drawImage(video, 0, 0, canvas.width, canvas.height);
             
-            // Convertir l'image du canvas en format Data URL (base64)
             photoDataUrl = canvas.toDataURL('image/jpeg');
             
-            // Afficher l'aperçu
             photoPreview.src = photoDataUrl;
             cameraView.classList.add('hidden');
             previewView.classList.remove('hidden');
@@ -161,7 +156,7 @@
         
         // Événement pour reprendre la photo
         retakeBtn.addEventListener('click', () => {
-            initCamera(); // Réinitialise simplement la vue
+            initCamera();
         });
 
         // Événement pour envoyer la photo
@@ -171,13 +166,10 @@
                 return;
             }
 
-            // Mettre à jour l'interface pour l'envoi
             statusMsg.textContent = "Envoi en cours, veuillez patienter...";
             sendBtn.disabled = true;
             retakeBtn.disabled = true;
 
-            // Préparer les données à envoyer
-            // On enlève le préfixe "data:image/jpeg;base64," pour n'envoyer que les données brutes
             const base64Data = photoDataUrl.split(',')[1];
             const payload = {
                 imageData: base64Data,
@@ -185,36 +177,46 @@
             };
 
             try {
+                // *** DÉBUT DU BLOC CORRIGÉ ***
                 // Envoi des données au script Google Apps via fetch
+                // Le mode 'no-cors' est essentiel pour contourner les problèmes de redirection de Google Script
+                // qui faisaient perdre les données de la requête POST.
                 const response = await fetch(SCRIPT_URL, {
                     method: 'POST',
+                    mode: 'no-cors', // Très important
+                    redirect: 'follow',
                     body: JSON.stringify(payload),
                     headers: {
-                        'Content-Type': 'text/plain;charset=utf-8', // Requis pour contourner certaines limitations CORS de Google Scripts
+                      // Note : Le Content-Type est envoyé mais peut ne pas être lu par le serveur en mode no-cors.
+                      // C'est pourquoi on parse le body en tant que texte brut côté Google Script.
+                      'Content-Type': 'application/json',
                     },
                 });
 
-                const result = await response.json();
-
-                if (result.status === "success") {
-                    statusMsg.textContent = "✅ Photo envoyée avec succès !";
-                    // Réinitialiser l'application après 2 secondes
-                    setTimeout(initCamera, 2000);
-                } else {
-                    throw new Error(result.message || 'Une erreur inconnue est survenue.');
-                }
+                // En mode 'no-cors', nous ne pouvons PAS lire la réponse du serveur.
+                // On considère donc l'envoi comme un succès si aucune erreur réseau n'est levée.
+                console.log("Requête envoyée. Vérifiez votre Google Drive et les logs du script.");
+                statusMsg.textContent = "✅ Envoi terminé ! La photo devrait apparaître dans votre Drive.";
+                
+                // On réinitialise l'interface après quelques secondes.
+                setTimeout(() => {
+                    initCamera();
+                    // Réactiver les boutons pour la prochaine photo
+                    sendBtn.disabled = false;
+                    retakeBtn.disabled = false;
+                }, 4000); // 4 secondes
+                // *** FIN DU BLOC CORRIGÉ ***
 
             } catch (error) {
-                console.error("Erreur lors de l'envoi : ", error);
-                statusMsg.textContent = `❌ Erreur lors de l'envoi : ${error.message}`;
-            } finally {
+                console.error("Erreur réseau lors de l'envoi : ", error);
+                statusMsg.textContent = `❌ Erreur réseau lors de l'envoi : ${error.message}`;
                 // Réactiver les boutons en cas d'erreur
                 sendBtn.disabled = false;
                 retakeBtn.disabled = false;
             }
         });
 
-        // Démarrer l'application en initialisant la caméra
+        // Démarrer l'application
         initCamera();
 
     </script>
