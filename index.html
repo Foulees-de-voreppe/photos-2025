@@ -5,7 +5,6 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Photo Uploader & Galerie</title>
     <style>
-        /* ... (tous les styles précédents restent inchangés) ... */
         body {
             font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
             background-color: #e9ebee; margin: 0; padding: 20px;
@@ -43,17 +42,23 @@
 </head>
 <body>
 
+    <!-- PARTIE HAUTE : Outil de capture -->
     <div id="capture-card" class="card">
         <h1>Prendre une photo</h1>
-        <div id="start-view"><button id="open-camera-btn">Ouvrir la Caméra</button></div>
+        <div id="start-view">
+            <button id="open-camera-btn">Ouvrir la Caméra</button>
+        </div>
         <div id="preview-view" class="hidden">
             <img id="photo-preview" alt="Aperçu de la photo">
-            <div class="button-group"><button id="retake">Reprendre</button><button id="send">Envoyer</button></div>
+            <div class="button-group">
+                <button id="retake">Reprendre</button>
+                <button id="send">Envoyer</button>
+            </div>
         </div>
         <p id="status"></p>
     </div>
 
-    <!-- MODIFICATION : La carte galerie commence avec juste un bouton -->
+    <!-- PARTIE BASSE : Galerie -->
     <div id="gallery-card" class="card">
         <h1>Galerie</h1>
         <div id="gallery-placeholder">
@@ -63,59 +68,24 @@
         <div id="image-grid"></div>
     </div>
     
-    <div id="fullscreen-camera-view" class="hidden">...</div>
+    <!-- Vue plein écran pour la caméra -->
+    <div id="fullscreen-camera-view" class="hidden">
+        <video id="fullscreen-video" autoplay playsinline></video>
+        <div id="fullscreen-controls">
+            <div class="flex-placeholder"></div>
+            <button id="snap-fullscreen-btn" title="Prendre la photo"></button>
+            <button id="swap-camera-btn" title="Changer de caméra">
+                <svg viewBox="0 0 24 24">
+                    <path fill="white" d="M12,6V9L16,5L12,1V4A8,8 0 0,0 4,12C4,13.57 4.46,15.03 5.24,16.26L6.7,14.8C6.25,13.97 6,13 6,12A6,6 0 0,1 12,6M18.76,7.74L17.3,9.2C17.74,10.04 18,11 18,12A6,6 0 0,1 12,18V15L8,19L12,23V20A8,8 0 0,0 20,12C20,10.43 19.54,8.97 18.76,7.74Z" />
+                </svg>
+            </button>
+        </div>
+        <button id="close-fullscreen-btn" title="Fermer la caméra">×</button>
+    </div>
+
     <canvas id="canvas" class="hidden"></canvas>
 
     <script>
-        // ... (Références aux éléments)
-        // NOUVEAU : Référence au bouton pour afficher la galerie et à son conteneur
-        const showGalleryBtn = document.getElementById('show-gallery-btn');
-        const galleryPlaceholder = document.getElementById('gallery-placeholder');
-
-        // ... (Code de l'Intersection Observer)
-
-        // MODIFICATION : La fonction loadGallery est maintenant appelée sur demande
-        async function loadGallery() {
-            galleryPlaceholder.classList.add('hidden');
-            galleryStatus.classList.remove('hidden');
-            galleryStatus.textContent = "Chargement des images...";
-            imageGrid.innerHTML = ''; 
-
-            // Le reste de la fonction est le même, avec le lazy loading
-            // ... (collez ici le reste de la fonction loadGallery précédente)
-        }
-
-        // MODIFICATION : Plus d'initialisation de la galerie au démarrage
-        function initializeApp() {
-            // Vide ! On ne fait rien au chargement de la page.
-        }
-
-        // NOUVEAU : Événement pour le bouton "Afficher la galerie"
-        showGalleryBtn.addEventListener('click', loadGallery);
-
-        // MODIFICATION : L'envoi de photo ne rafraîchit que si la galerie est visible
-        sendBtn.addEventListener('click', async () => {
-            // ... (début du code d'envoi)
-            try {
-                // ... (code fetch)
-                statusMsg.textContent = "✅ Photo envoyée !";
-                previewView.classList.add('hidden');
-                startView.classList.remove('hidden');
-
-                // On ne rafraîchit la galerie que si l'utilisateur l'a déjà ouverte
-                if (galleryPlaceholder.classList.contains('hidden')) {
-                    await loadGallery();
-                }
-
-                setTimeout(() => { statusMsg.textContent = ""; }, 2000);
-            } catch (error) {
-                // ... (gestion d'erreur)
-            } finally {
-                // ... (réactivation des boutons)
-            }
-        });
-
-        // Pour éviter la confusion, voici le bloc <script> complet
         const SCRIPT_URL = "https://script.google.com/macros/s/AKfycbzbdC-60zvJpOXhWBIgV3kdkIjI1u5M0m-5tajQrpWbrMOHfeNYWuBcflraX_5T4rr4/exec";
 
         const startView = document.getElementById('start-view');
@@ -133,8 +103,8 @@
         const snapFullscreenBtn = document.getElementById('snap-fullscreen-btn');
         const closeFullscreenBtn = document.getElementById('close-fullscreen-btn');
         const swapCameraBtn = document.getElementById('swap-camera-btn');
-        const showGalleryBtnNew = document.getElementById('show-gallery-btn');
-        const galleryPlaceholderNew = document.getElementById('gallery-placeholder');
+        const showGalleryBtn = document.getElementById('show-gallery-btn');
+        const galleryPlaceholder = document.getElementById('gallery-placeholder');
 
         let photoDataUrl = null;
         let stream = null;
@@ -151,8 +121,8 @@
             });
         }, { rootMargin: '0px 0px 200px 0px' });
 
-        async function loadGalleryNew() {
-            galleryPlaceholderNew.classList.add('hidden');
+        async function loadGallery() {
+            galleryPlaceholder.classList.add('hidden');
             galleryStatus.classList.remove('hidden');
             galleryStatus.textContent = "Chargement des images...";
             imageGrid.innerHTML = ''; 
@@ -207,7 +177,7 @@
         snapFullscreenBtn.addEventListener('click', takePicture);
         retakeBtn.addEventListener('click', openFullscreenCamera);
         swapCameraBtn.addEventListener('click', swapCamera);
-        showGalleryBtnNew.addEventListener('click', loadGalleryNew);
+        showGalleryBtn.addEventListener('click', loadGallery);
 
         sendBtn.addEventListener('click', async () => {
             if (!photoDataUrl) return;
@@ -222,7 +192,7 @@
                 });
                 statusMsg.textContent = "✅ Photo envoyée !";
                 previewView.classList.add('hidden'); startView.classList.remove('hidden');
-                if (galleryPlaceholderNew.classList.contains('hidden')) { await loadGalleryNew(); }
+                if (!galleryPlaceholder.classList.contains('hidden')) { await loadGallery(); }
                 setTimeout(() => { statusMsg.textContent = ""; }, 2000);
             } catch (error) { statusMsg.textContent = `❌ Erreur réseau.`;
             } finally { sendBtn.disabled = false; retakeBtn.disabled = false; }
