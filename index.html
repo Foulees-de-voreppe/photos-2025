@@ -42,7 +42,6 @@
 </head>
 <body>
 
-    <!-- PARTIE HAUTE : Outil de capture -->
     <div id="capture-card" class="card">
         <h1>Prendre une photo</h1>
         <div id="start-view">
@@ -58,7 +57,6 @@
         <p id="status"></p>
     </div>
 
-    <!-- PARTIE BASSE : Galerie -->
     <div id="gallery-card" class="card">
         <h1>Galerie</h1>
         <div id="gallery-placeholder">
@@ -68,7 +66,6 @@
         <div id="image-grid"></div>
     </div>
     
-    <!-- Vue plein écran pour la caméra -->
     <div id="fullscreen-camera-view" class="hidden">
         <video id="fullscreen-video" autoplay playsinline></video>
         <div id="fullscreen-controls">
@@ -86,116 +83,121 @@
     <canvas id="canvas" class="hidden"></canvas>
 
     <script>
-        const SCRIPT_URL = "https://script.google.com/macros/s/AKfycbzbdC-60zvJpOXhWBIgV3kdkIjI1u5M0m-5tajQrpWbrMOHfeNYWuBcflraX_5T4rr4/exec";
+        document.addEventListener('DOMContentLoaded', () => {
+            const SCRIPT_URL = "https://script.google.com/macros/s/AKfycbzbdC-60zvJpOXhWBIgV3kdkIjI1u5M0m-5tajQrpWbrMOHfeNYWuBcflraX_5T4rr4/exec";
 
-        const startView = document.getElementById('start-view');
-        const previewView = document.getElementById('preview-view');
-        const photoPreview = document.getElementById('photo-preview');
-        const statusMsg = document.getElementById('status');
-        const galleryStatus = document.getElementById('gallery-status');
-        const imageGrid = document.getElementById('image-grid');
-        const canvas = document.getElementById('canvas');
-        const fullscreenView = document.getElementById('fullscreen-camera-view');
-        const fullscreenVideo = document.getElementById('fullscreen-video');
-        const openCameraBtn = document.getElementById('open-camera-btn');
-        const sendBtn = document.getElementById('send');
-        const retakeBtn = document.getElementById('retake');
-        const snapFullscreenBtn = document.getElementById('snap-fullscreen-btn');
-        const closeFullscreenBtn = document.getElementById('close-fullscreen-btn');
-        const swapCameraBtn = document.getElementById('swap-camera-btn');
-        const showGalleryBtn = document.getElementById('show-gallery-btn');
-        const galleryPlaceholder = document.getElementById('gallery-placeholder');
+            const startView = document.getElementById('start-view');
+            const previewView = document.getElementById('preview-view');
+            const photoPreview = document.getElementById('photo-preview');
+            const statusMsg = document.getElementById('status');
+            const galleryStatus = document.getElementById('gallery-status');
+            const imageGrid = document.getElementById('image-grid');
+            const canvas = document.getElementById('canvas');
+            const fullscreenView = document.getElementById('fullscreen-camera-view');
+            const fullscreenVideo = document.getElementById('fullscreen-video');
+            const openCameraBtn = document.getElementById('open-camera-btn');
+            const sendBtn = document.getElementById('send');
+            const retakeBtn = document.getElementById('retake');
+            const snapFullscreenBtn = document.getElementById('snap-fullscreen-btn');
+            const closeFullscreenBtn = document.getElementById('close-fullscreen-btn');
+            const swapCameraBtn = document.getElementById('swap-camera-btn');
+            const showGalleryBtn = document.getElementById('show-gallery-btn');
+            const galleryPlaceholder = document.getElementById('gallery-placeholder');
 
-        let photoDataUrl = null;
-        let stream = null;
-        let currentFacingMode = 'environment';
-        
-        const lazyLoadObserver = new IntersectionObserver((entries, observer) => {
-            entries.forEach(entry => {
-                if (entry.isIntersecting) {
-                    const img = entry.target;
-                    const src = img.dataset.src;
-                    if (src) { img.src = src; img.removeAttribute('data-src'); }
-                    observer.unobserve(img);
-                }
-            });
-        }, { rootMargin: '0px 0px 200px 0px' });
-
-        async function loadGallery() {
-            galleryPlaceholder.classList.add('hidden');
-            galleryStatus.classList.remove('hidden');
-            galleryStatus.textContent = "Chargement des images...";
-            imageGrid.innerHTML = ''; 
-            try {
-                const response = await fetch(SCRIPT_URL);
-                const result = await response.json();
-                if (result.status === "success" && result.data) {
-                    const images = result.data.reverse();
-                    if (images.length === 0) {
-                        galleryStatus.textContent = "Aucune photo dans la galerie.";
-                    } else {
-                        galleryStatus.textContent = "";
-                        images.forEach(imgData => {
-                            const link = document.createElement('a');
-                            link.href = `https://drive.google.com/uc?export=view&id=${imgData.id}`;
-                            link.target = "_blank";
-                            const imgElement = document.createElement('img');
-                            imgElement.dataset.src = `https://drive.google.com/thumbnail?id=${imgData.id}&sz=w250`;
-                            imgElement.alt = `Vignette pour ${imgData.name}`;
-                            lazyLoadObserver.observe(imgElement);
-                            link.appendChild(imgElement);
-                            imageGrid.appendChild(link);
-                        });
+            let photoDataUrl = null;
+            let stream = null;
+            let currentFacingMode = 'environment';
+            
+            const lazyLoadObserver = new IntersectionObserver((entries, observer) => {
+                entries.forEach(entry => {
+                    if (entry.isIntersecting) {
+                        const img = entry.target;
+                        const src = img.dataset.src;
+                        if (src) { img.src = src; img.removeAttribute('data-src'); }
+                        observer.unobserve(img);
                     }
-                } else { throw new Error(result.message || 'Erreur inconnue.'); }
-            } catch (error) { galleryStatus.textContent = `❌ Erreur de chargement: ${error.message}`; }
-        }
-
-        function stopCurrentStream() { if (stream) { stream.getTracks().forEach(track => track.stop()); } }
-        async function startCameraStream() {
-            stopCurrentStream();
-            try {
-                stream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: currentFacingMode } });
-                fullscreenVideo.srcObject = stream;
-            } catch (err) { statusMsg.textContent = `Erreur: Impossible d'accéder à la caméra (${currentFacingMode}).`; closeFullscreenCamera(); }
-        }
-        function openFullscreenCamera() { fullscreenView.classList.remove('hidden'); startCameraStream(); }
-        function closeFullscreenCamera() { stopCurrentStream(); fullscreenView.classList.add('hidden'); }
-        function swapCamera() { currentFacingMode = (currentFacingMode === 'environment') ? 'user' : 'environment'; startCameraStream(); }
-        function takePicture() {
-            const context = canvas.getContext('2d');
-            canvas.width = fullscreenVideo.videoWidth; canvas.height = fullscreenVideo.videoHeight;
-            context.drawImage(fullscreenVideo, 0, 0, canvas.width, canvas.height);
-            photoDataUrl = canvas.toDataURL('image/jpeg');
-            photoPreview.src = photoDataUrl;
-            startView.classList.add('hidden'); previewView.classList.remove('hidden');
-            closeFullscreenCamera();
-        }
-        
-        openCameraBtn.addEventListener('click', openFullscreenCamera);
-        closeFullscreenBtn.addEventListener('click', closeFullscreenCamera);
-        snapFullscreenBtn.addEventListener('click', takePicture);
-        retakeBtn.addEventListener('click', openFullscreenCamera);
-        swapCameraBtn.addEventListener('click', swapCamera);
-        showGalleryBtn.addEventListener('click', loadGallery);
-
-        sendBtn.addEventListener('click', async () => {
-            if (!photoDataUrl) return;
-            statusMsg.textContent = "Envoi en cours...";
-            sendBtn.disabled = true; retakeBtn.disabled = true;
-            const base64Data = photoDataUrl.split(',')[1];
-            const payload = { imageData: base64Data, mimeType: 'image/jpeg' };
-            try {
-                await fetch(SCRIPT_URL, {
-                    method: 'POST', redirect: 'follow', body: JSON.stringify(payload),
-                    headers: { 'Content-Type': 'text/plain;charset=utf-8' },
                 });
-                statusMsg.textContent = "✅ Photo envoyée !";
-                previewView.classList.add('hidden'); startView.classList.remove('hidden');
-                if (!galleryPlaceholder.classList.contains('hidden')) { await loadGallery(); }
-                setTimeout(() => { statusMsg.textContent = ""; }, 2000);
-            } catch (error) { statusMsg.textContent = `❌ Erreur réseau.`;
-            } finally { sendBtn.disabled = false; retakeBtn.disabled = false; }
+            }, { rootMargin: '0px 0px 200px 0px' });
+
+            async function loadGallery() {
+                galleryPlaceholder.classList.add('hidden');
+                galleryStatus.classList.remove('hidden');
+                galleryStatus.textContent = "Chargement des images...";
+                imageGrid.innerHTML = ''; 
+                try {
+                    const response = await fetch(SCRIPT_URL);
+                    const result = await response.json();
+                    if (result.status === "success" && result.data) {
+                        const images = result.data.reverse();
+                        if (images.length === 0) {
+                            galleryStatus.textContent = "Aucune photo dans la galerie.";
+                        } else {
+                            galleryStatus.textContent = "";
+                            images.forEach(imgData => {
+                                const link = document.createElement('a');
+                                link.href = `https://drive.google.com/uc?export=view&id=${imgData.id}`;
+                                link.target = "_blank";
+                                const imgElement = document.createElement('img');
+                                imgElement.dataset.src = `https://drive.google.com/thumbnail?id=${imgData.id}&sz=w250`;
+                                imgElement.alt = `Vignette pour ${imgData.name}`;
+                                lazyLoadObserver.observe(imgElement);
+                                link.appendChild(imgElement);
+                                imageGrid.appendChild(link);
+                            });
+                        }
+                    } else { throw new Error(result.message || 'Erreur inconnue.'); }
+                } catch (error) { galleryStatus.textContent = `❌ Erreur de chargement: ${error.message}`; }
+            }
+
+            function stopCurrentStream() { if (stream) { stream.getTracks().forEach(track => track.stop()); } }
+            
+            async function startCameraStream() {
+                stopCurrentStream();
+                try {
+                    stream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: currentFacingMode } });
+                    fullscreenVideo.srcObject = stream;
+                } catch (err) { statusMsg.textContent = `Erreur: Impossible d'accéder à la caméra (${currentFacingMode}).`; closeFullscreenCamera(); }
+            }
+
+            function openFullscreenCamera() { fullscreenView.classList.remove('hidden'); startCameraStream(); }
+            function closeFullscreenCamera() { stopCurrentStream(); fullscreenView.classList.add('hidden'); }
+            function swapCamera() { currentFacingMode = (currentFacingMode === 'environment') ? 'user' : 'environment'; startCameraStream(); }
+            
+            function takePicture() {
+                const context = canvas.getContext('2d');
+                canvas.width = fullscreenVideo.videoWidth; canvas.height = fullscreenVideo.videoHeight;
+                context.drawImage(fullscreenVideo, 0, 0, canvas.width, canvas.height);
+                photoDataUrl = canvas.toDataURL('image/jpeg');
+                photoPreview.src = photoDataUrl;
+                startView.classList.add('hidden'); previewView.classList.remove('hidden');
+                closeFullscreenCamera();
+            }
+            
+            openCameraBtn.addEventListener('click', openFullscreenCamera);
+            closeFullscreenBtn.addEventListener('click', closeFullscreenCamera);
+            snapFullscreenBtn.addEventListener('click', takePicture);
+            retakeBtn.addEventListener('click', openFullscreenCamera);
+            swapCameraBtn.addEventListener('click', swapCamera);
+            showGalleryBtn.addEventListener('click', loadGallery);
+
+            sendBtn.addEventListener('click', async () => {
+                if (!photoDataUrl) return;
+                statusMsg.textContent = "Envoi en cours...";
+                sendBtn.disabled = true; retakeBtn.disabled = true;
+                const base64Data = photoDataUrl.split(',')[1];
+                const payload = { imageData: base64Data, mimeType: 'image/jpeg' };
+                try {
+                    await fetch(SCRIPT_URL, {
+                        method: 'POST', redirect: 'follow', body: JSON.stringify(payload),
+                        headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+                    });
+                    statusMsg.textContent = "✅ Photo envoyée !";
+                    previewView.classList.add('hidden'); startView.classList.remove('hidden');
+                    if (!galleryPlaceholder.classList.contains('hidden')) { await loadGallery(); }
+                    setTimeout(() => { statusMsg.textContent = ""; }, 2000);
+                } catch (error) { statusMsg.textContent = `❌ Erreur réseau.`;
+                } finally { sendBtn.disabled = false; retakeBtn.disabled = false; }
+            });
         });
     </script>
 </body>
