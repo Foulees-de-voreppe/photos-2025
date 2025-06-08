@@ -5,6 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Photo Uploader & Galerie</title>
     <style>
+        /* ... (tous les styles précédents restent inchangés) ... */
         body {
             font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
             background-color: #e9ebee; margin: 0; padding: 20px;
@@ -21,94 +22,100 @@
         button { padding: 12px 20px; font-size: 16px; border: none; border-radius: 8px; cursor: pointer; transition: background-color 0.3s ease; font-weight: bold; display: inline-flex; justify-content: center; align-items: center; }
         button:disabled { background-color: #ccc; cursor: not-allowed; }
         #status, #gallery-status { margin-top: 15px; font-weight: bold; min-height: 24px; color: #606770; }
-
-        /* -- Styles de la capture -- */
         #photo-preview { max-width: 100%; border-radius: 8px; border: 1px solid #ddd; }
-        #open-camera-btn { background-color: #1877f2; color: white; padding: 20px; font-size: 18px; }
+        #open-camera-btn, #show-gallery-btn { background-color: #1877f2; color: white; padding: 20px; font-size: 18px; }
         #send { background-color: #42b72a; color: white; }
         #retake { background-color: #f5f6f7; color: #4b4f56; border: 1px solid #ccd0d5; }
-        
-        /* -- Styles pour la vue Plein Écran -- */
-        #fullscreen-camera-view {
-            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
-            background-color: #000; z-index: 1000;
-            display: flex; justify-content: center; align-items: center;
-        }
+        #fullscreen-camera-view { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background-color: #000; z-index: 1000; display: flex; justify-content: center; align-items: center; }
         #fullscreen-video { width: 100%; height: 100%; object-fit: cover; }
-        #fullscreen-controls {
-            position: absolute; bottom: 0; left: 0; width: 100%;
-            padding: 20px; box-sizing: border-box;
-            background: linear-gradient(to top, rgba(0,0,0,0.7), transparent);
-            display: flex; justify-content: space-between; align-items: center;
-        }
-        #snap-fullscreen-btn {
-            width: 70px; height: 70px; border-radius: 50%;
-            background-color: white; border: 4px solid rgba(255,255,255,0.5); padding: 0;
-            margin: 0 auto; /* Pour le centrer */
-        }
-        #swap-camera-btn {
-            background: rgba(255,255,255,0.2); border: none;
-            width: 50px; height: 50px; border-radius: 50%; padding: 0;
-        }
+        #fullscreen-controls { position: absolute; bottom: 0; left: 0; width: 100%; padding: 20px; box-sizing: border-box; background: linear-gradient(to top, rgba(0,0,0,0.7), transparent); display: flex; justify-content: space-between; align-items: center; }
+        #snap-fullscreen-btn { width: 70px; height: 70px; border-radius: 50%; background-color: white; border: 4px solid rgba(255,255,255,0.5); padding: 0; margin: 0 auto; }
+        #swap-camera-btn { background: rgba(255,255,255,0.2); border: none; width: 50px; height: 50px; border-radius: 50%; padding: 0; }
         #swap-camera-btn svg { width: 60%; height: 60%; }
-        #close-fullscreen-btn {
-            position: absolute; top: 20px; right: 20px;
-            background: rgba(0,0,0,0.4); color: white; font-size: 24px;
-            border: none; width: 44px; height: 44px; border-radius: 50%;
-            padding: 0; line-height: 44px;
-        }
+        #close-fullscreen-btn { position: absolute; top: 20px; right: 20px; background: rgba(0,0,0,0.4); color: white; font-size: 24px; border: none; width: 44px; height: 44px; border-radius: 50%; padding: 0; line-height: 44px; }
         .flex-placeholder { width: 50px; } 
-
-        /* -- Styles de la Galerie -- */
         #image-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(120px, 1fr)); gap: 15px; margin-top: 20px; }
-        #image-grid a { display: block; border-radius: 8px; overflow: hidden; box-shadow: 0 1px 3px rgba(0,0,0,0.1); transition: transform 0.2s, box-shadow 0.2s; }
-        #image-grid img { width: 100%; height: 120px; object-fit: cover; display: block; }
+        #image-grid a { display: block; border-radius: 8px; overflow: hidden; box-shadow: 0 1px 3px rgba(0,0,0,0.1); transition: transform 0.2s, box-shadow 0.2s; background-color: #f0f0f0; }
+        #image-grid img { width: 100%; height: 120px; object-fit: cover; display: block; transition: opacity 0.4s; }
+        #image-grid img:not([src]) { opacity: 0; }
         #image-grid a:hover { transform: scale(1.05); box-shadow: 0 4px 10px rgba(0,0,0,0.2); }
     </style>
 </head>
 <body>
 
-    <!-- PARTIE HAUTE : Outil de capture -->
     <div id="capture-card" class="card">
         <h1>Prendre une photo</h1>
-        <div id="start-view">
-            <button id="open-camera-btn">Ouvrir la Caméra</button>
-        </div>
+        <div id="start-view"><button id="open-camera-btn">Ouvrir la Caméra</button></div>
         <div id="preview-view" class="hidden">
             <img id="photo-preview" alt="Aperçu de la photo">
-            <div class="button-group">
-                <button id="retake">Reprendre</button>
-                <button id="send">Envoyer</button>
-            </div>
+            <div class="button-group"><button id="retake">Reprendre</button><button id="send">Envoyer</button></div>
         </div>
         <p id="status"></p>
     </div>
 
-    <!-- PARTIE BASSE : Galerie -->
+    <!-- MODIFICATION : La carte galerie commence avec juste un bouton -->
     <div id="gallery-card" class="card">
         <h1>Galerie</h1>
-        <p id="gallery-status"></p>
+        <div id="gallery-placeholder">
+            <button id="show-gallery-btn">Afficher la galerie</button>
+        </div>
+        <p id="gallery-status" class="hidden"></p>
         <div id="image-grid"></div>
     </div>
     
-    <!-- Vue plein écran pour la caméra -->
-    <div id="fullscreen-camera-view" class="hidden">
-        <video id="fullscreen-video" autoplay playsinline></video>
-        <div id="fullscreen-controls">
-            <div class="flex-placeholder"></div>
-            <button id="snap-fullscreen-btn" title="Prendre la photo"></button>
-            <button id="swap-camera-btn" title="Changer de caméra">
-                <svg viewBox="0 0 24 24">
-                    <path fill="white" d="M12,6V9L16,5L12,1V4A8,8 0 0,0 4,12C4,13.57 4.46,15.03 5.24,16.26L6.7,14.8C6.25,13.97 6,13 6,12A6,6 0 0,1 12,6M18.76,7.74L17.3,9.2C17.74,10.04 18,11 18,12A6,6 0 0,1 12,18V15L8,19L12,23V20A8,8 0 0,0 20,12C20,10.43 19.54,8.97 18.76,7.74Z" />
-                </svg>
-            </button>
-        </div>
-        <button id="close-fullscreen-btn" title="Fermer la caméra">×</button>
-    </div>
-
+    <div id="fullscreen-camera-view" class="hidden">...</div>
     <canvas id="canvas" class="hidden"></canvas>
 
     <script>
+        // ... (Références aux éléments)
+        // NOUVEAU : Référence au bouton pour afficher la galerie et à son conteneur
+        const showGalleryBtn = document.getElementById('show-gallery-btn');
+        const galleryPlaceholder = document.getElementById('gallery-placeholder');
+
+        // ... (Code de l'Intersection Observer)
+
+        // MODIFICATION : La fonction loadGallery est maintenant appelée sur demande
+        async function loadGallery() {
+            galleryPlaceholder.classList.add('hidden');
+            galleryStatus.classList.remove('hidden');
+            galleryStatus.textContent = "Chargement des images...";
+            imageGrid.innerHTML = ''; 
+
+            // Le reste de la fonction est le même, avec le lazy loading
+            // ... (collez ici le reste de la fonction loadGallery précédente)
+        }
+
+        // MODIFICATION : Plus d'initialisation de la galerie au démarrage
+        function initializeApp() {
+            // Vide ! On ne fait rien au chargement de la page.
+        }
+
+        // NOUVEAU : Événement pour le bouton "Afficher la galerie"
+        showGalleryBtn.addEventListener('click', loadGallery);
+
+        // MODIFICATION : L'envoi de photo ne rafraîchit que si la galerie est visible
+        sendBtn.addEventListener('click', async () => {
+            // ... (début du code d'envoi)
+            try {
+                // ... (code fetch)
+                statusMsg.textContent = "✅ Photo envoyée !";
+                previewView.classList.add('hidden');
+                startView.classList.remove('hidden');
+
+                // On ne rafraîchit la galerie que si l'utilisateur l'a déjà ouverte
+                if (galleryPlaceholder.classList.contains('hidden')) {
+                    await loadGallery();
+                }
+
+                setTimeout(() => { statusMsg.textContent = ""; }, 2000);
+            } catch (error) {
+                // ... (gestion d'erreur)
+            } finally {
+                // ... (réactivation des boutons)
+            }
+        });
+
+        // Pour éviter la confusion, voici le bloc <script> complet
         const SCRIPT_URL = "https://script.google.com/macros/s/AKfycbzbdC-60zvJpOXhWBIgV3kdkIjI1u5M0m-5tajQrpWbrMOHfeNYWuBcflraX_5T4rr4/exec";
 
         const startView = document.getElementById('start-view');
@@ -126,52 +133,72 @@
         const snapFullscreenBtn = document.getElementById('snap-fullscreen-btn');
         const closeFullscreenBtn = document.getElementById('close-fullscreen-btn');
         const swapCameraBtn = document.getElementById('swap-camera-btn');
+        const showGalleryBtnNew = document.getElementById('show-gallery-btn');
+        const galleryPlaceholderNew = document.getElementById('gallery-placeholder');
 
         let photoDataUrl = null;
         let stream = null;
         let currentFacingMode = 'environment';
+        
+        const lazyLoadObserver = new IntersectionObserver((entries, observer) => {
+            entries.forEach(entry => {
+                if (entry.isIntersecting) {
+                    const img = entry.target;
+                    const src = img.dataset.src;
+                    if (src) { img.src = src; img.removeAttribute('data-src'); }
+                    observer.unobserve(img);
+                }
+            });
+        }, { rootMargin: '0px 0px 200px 0px' });
 
-        function stopCurrentStream() {
-            if (stream) { stream.getTracks().forEach(track => track.stop()); }
+        async function loadGalleryNew() {
+            galleryPlaceholderNew.classList.add('hidden');
+            galleryStatus.classList.remove('hidden');
+            galleryStatus.textContent = "Chargement des images...";
+            imageGrid.innerHTML = ''; 
+            try {
+                const response = await fetch(SCRIPT_URL);
+                const result = await response.json();
+                if (result.status === "success" && result.data) {
+                    const images = result.data.reverse();
+                    if (images.length === 0) {
+                        galleryStatus.textContent = "Aucune photo dans la galerie.";
+                    } else {
+                        galleryStatus.textContent = "";
+                        images.forEach(imgData => {
+                            const link = document.createElement('a');
+                            link.href = `https://drive.google.com/uc?export=view&id=${imgData.id}`;
+                            link.target = "_blank";
+                            const imgElement = document.createElement('img');
+                            imgElement.dataset.src = `https://drive.google.com/thumbnail?id=${imgData.id}&sz=w250`;
+                            imgElement.alt = `Vignette pour ${imgData.name}`;
+                            lazyLoadObserver.observe(imgElement);
+                            link.appendChild(imgElement);
+                            imageGrid.appendChild(link);
+                        });
+                    }
+                } else { throw new Error(result.message || 'Erreur inconnue.'); }
+            } catch (error) { galleryStatus.textContent = `❌ Erreur de chargement: ${error.message}`; }
         }
 
+        function stopCurrentStream() { if (stream) { stream.getTracks().forEach(track => track.stop()); } }
         async function startCameraStream() {
             stopCurrentStream();
             try {
-                stream = await navigator.mediaDevices.getUserMedia({ 
-                    video: { facingMode: currentFacingMode } 
-                });
+                stream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: currentFacingMode } });
                 fullscreenVideo.srcObject = stream;
-            } catch (err) {
-                statusMsg.textContent = `Erreur: Impossible d'accéder à la caméra (${currentFacingMode}).`;
-                closeFullscreenCamera();
-            }
+            } catch (err) { statusMsg.textContent = `Erreur: Impossible d'accéder à la caméra (${currentFacingMode}).`; closeFullscreenCamera(); }
         }
-
-        function openFullscreenCamera() {
-            fullscreenView.classList.remove('hidden');
-            startCameraStream();
-        }
-
-        function closeFullscreenCamera() {
-            stopCurrentStream();
-            fullscreenView.classList.add('hidden');
-        }
-
-        function swapCamera() {
-            currentFacingMode = (currentFacingMode === 'environment') ? 'user' : 'environment';
-            startCameraStream();
-        }
-
+        function openFullscreenCamera() { fullscreenView.classList.remove('hidden'); startCameraStream(); }
+        function closeFullscreenCamera() { stopCurrentStream(); fullscreenView.classList.add('hidden'); }
+        function swapCamera() { currentFacingMode = (currentFacingMode === 'environment') ? 'user' : 'environment'; startCameraStream(); }
         function takePicture() {
             const context = canvas.getContext('2d');
-            canvas.width = fullscreenVideo.videoWidth;
-            canvas.height = fullscreenVideo.videoHeight;
+            canvas.width = fullscreenVideo.videoWidth; canvas.height = fullscreenVideo.videoHeight;
             context.drawImage(fullscreenVideo, 0, 0, canvas.width, canvas.height);
             photoDataUrl = canvas.toDataURL('image/jpeg');
             photoPreview.src = photoDataUrl;
-            startView.classList.add('hidden');
-            previewView.classList.remove('hidden');
+            startView.classList.add('hidden'); previewView.classList.remove('hidden');
             closeFullscreenCamera();
         }
         
@@ -180,6 +207,7 @@
         snapFullscreenBtn.addEventListener('click', takePicture);
         retakeBtn.addEventListener('click', openFullscreenCamera);
         swapCameraBtn.addEventListener('click', swapCamera);
+        showGalleryBtnNew.addEventListener('click', loadGalleryNew);
 
         sendBtn.addEventListener('click', async () => {
             if (!photoDataUrl) return;
@@ -193,42 +221,12 @@
                     headers: { 'Content-Type': 'text/plain;charset=utf-8' },
                 });
                 statusMsg.textContent = "✅ Photo envoyée !";
-                previewView.classList.add('hidden');
-                startView.classList.remove('hidden');
-                await loadGallery(); 
+                previewView.classList.add('hidden'); startView.classList.remove('hidden');
+                if (galleryPlaceholderNew.classList.contains('hidden')) { await loadGalleryNew(); }
                 setTimeout(() => { statusMsg.textContent = ""; }, 2000);
             } catch (error) { statusMsg.textContent = `❌ Erreur réseau.`;
             } finally { sendBtn.disabled = false; retakeBtn.disabled = false; }
         });
-
-        async function loadGallery() {
-            galleryStatus.textContent = "Chargement des images...";
-            imageGrid.innerHTML = ''; 
-            try {
-                const response = await fetch(SCRIPT_URL);
-                const result = await response.json();
-                if (result.status === "success" && result.data) {
-                    const images = result.data.reverse();
-                    if (images.length === 0) {
-                        galleryStatus.textContent = "Aucune photo dans la galerie.";
-                    } else {
-                        galleryStatus.textContent = "";
-                        images.forEach(img => {
-                            const link = document.createElement('a');
-                            link.href = `https://drive.google.com/uc?export=view&id=${img.id}`;
-                            link.target = "_blank";
-                            const imgElement = document.createElement('img');
-                            imgElement.src = `https://drive.google.com/thumbnail?id=${img.id}&sz=w250`;
-                            link.appendChild(imgElement);
-                            imageGrid.appendChild(link);
-                        });
-                    }
-                } else { throw new Error(result.message || 'Erreur inconnue.'); }
-            } catch (error) { galleryStatus.textContent = `❌ Erreur: ${error.message}`; }
-        }
-
-        function initializeApp() { loadGallery(); }
-        initializeApp();
     </script>
 </body>
 </html>
