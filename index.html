@@ -18,13 +18,33 @@
         h1 { color: #1c1e21; margin: 0 0 20px 0; font-size: 24px; border-bottom: 1px solid #ddd; padding-bottom: 10px; }
         .hidden { display: none !important; }
         .button-group { margin-top: 15px; display: flex; gap: 10px; justify-content: center; }
-        button { padding: 12px 20px; font-size: 16px; border: none; border-radius: 8px; cursor: pointer; transition: background-color 0.3s ease; font-weight: bold; display: inline-flex; justify-content: center; align-items: center; }
+        button { padding: 12px 20px; font-size: 16px; border: none; border-radius: 8px; cursor: pointer; transition: background-color 0.3s ease; font-weight: bold; display: inline-flex; justify-content: center; align-items: center; gap: 8px; /* MODIFIÉ: Ajout d'un gap pour l'icône */ }
         button:disabled { background-color: #ccc; cursor: not-allowed; }
         #status, #gallery-status { margin-top: 15px; font-weight: bold; min-height: 24px; color: #606770; }
         #photo-preview { max-width: 100%; border-radius: 8px; border: 1px solid #ddd; }
-        #open-camera-btn, #show-gallery-btn { background-color: #1877f2; color: white; padding: 20px; font-size: 18px; }
         #send { background-color: #42b72a; color: white; }
         #retake { background-color: #f5f6f7; color: #4b4f56; border: 1px solid #ccd0d5; }
+
+        /* MODIFIÉ : Styles pour le menu principal */
+        #main-menu-buttons { display: flex; flex-direction: column; gap: 15px; }
+        .main-menu-btn {
+            background-color: #1877f2; color: white;
+            padding: 20px; font-size: 18px;
+        }
+        .main-menu-btn svg { width: 24px; height: 24px; fill: white; }
+        #main-back-btn { background-color: #6c757d; }
+
+        /* MODIFIÉ : Styles pour les en-têtes de carte avec bouton retour */
+        .card-header {
+            display: flex; justify-content: space-between; align-items: center;
+            border-bottom: 1px solid #ddd; padding-bottom: 10px; margin-bottom: 20px;
+        }
+        .card-header h1 { border-bottom: none; padding-bottom: 0; margin-bottom: 0; flex-grow: 1; text-align: center; }
+        .back-to-menu-btn { background: none; border: none; padding: 5px; cursor: pointer; display: inline-flex; align-items: center; }
+        .back-to-menu-btn svg { width: 28px; height: 28px; fill: #606770; }
+        .back-to-menu-btn:hover svg { fill: #1877f2; }
+        .header-placeholder { width: 38px; } /* Pour centrer le titre */
+        
         #fullscreen-camera-view { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background-color: #000; z-index: 1000; display: flex; justify-content: center; align-items: center; }
         #fullscreen-video { width: 100%; height: 100%; object-fit: cover; }
         #fullscreen-controls { position: absolute; bottom: 0; left: 0; width: 100%; padding: 20px; box-sizing: border-box; background: linear-gradient(to top, rgba(0,0,0,0.7), transparent); display: flex; justify-content: space-between; align-items: center; }
@@ -38,30 +58,41 @@
         #image-grid img { width: 100%; height: 120px; object-fit: cover; display: block; transition: opacity 0.4s; }
         #image-grid img:not([src]) { opacity: 0; }
         #image-grid a:hover { transform: scale(1.05); box-shadow: 0 4px 10px rgba(0,0,0,0.2); }
-        .gallery-header { display: flex; justify-content: center; align-items: center; gap: 15px; border-bottom: 1px solid #ddd; padding-bottom: 10px; margin-bottom: 20px; }
-        .gallery-header h1 { border-bottom: none; padding-bottom: 0; margin-bottom: 0; }
         #refresh-gallery-btn { background: none; border: none; padding: 5px; cursor: pointer; display: inline-flex; align-items: center; }
         #refresh-gallery-btn svg { width: 22px; height: 22px; fill: #606770; transition: transform 0.5s ease; }
         #refresh-gallery-btn:hover svg { fill: #1877f2; }
         #refresh-gallery-btn.loading svg { transform: rotate(360deg); }
-
-        /* AJOUTÉ : Style pour le nouveau bouton retour */
-        #back-btn-camera {
-            position: absolute; top: 20px; left: 20px;
-            background: rgba(0,0,0,0.4); color: white;
-            border: none; width: 44px; height: 44px;
-            border-radius: 50%; padding: 0;
-            display: flex; justify-content: center; align-items: center;
-        }
-        #back-btn-camera svg { width: 24px; height: 24px; fill: white; }
     </style>
 </head>
 <body>
 
-    <div id="capture-card" class="card">
-        <h1>Prendre une photo</h1>
-        <div id="start-view">
-            <button id="open-camera-btn">Ouvrir la Caméra</button>
+    <!-- MODIFIÉ : Ajout du menu principal -->
+    <div id="main-menu-card" class="card">
+        <h1>Menu Principal</h1>
+        <div id="main-menu-buttons">
+            <button id="main-back-btn" class="main-menu-btn">
+                <svg viewBox="0 0 24 24"><path d="M20,11V13H8L13.5,18.5L12.08,19.92L4.16,12L12.08,4.08L13.5,5.5L8,11H20Z" /></svg>
+                Retour
+            </button>
+            <button id="main-camera-btn" class="main-menu-btn">
+                <svg viewBox="0 0 24 24"><path d="M4,4H7L9,2H15L17,4H20A2,2 0 0,1 22,6V18A2,2 0 0,1 20,20H4A2,2 0 0,1 2,18V6A2,2 0 0,1 4,4M12,7A5,5 0 0,0 7,12A5,5 0 0,0 12,17A5,5 0 0,0 17,12A5,5 0 0,0 12,7M12,9A3,3 0 0,1 15,12A3,3 0 0,1 12,15A3,3 0 0,1 9,12A3,3 0 0,1 12,9Z" /></svg>
+                Caméra
+            </button>
+            <button id="main-gallery-btn" class="main-menu-btn">
+                <svg viewBox="0 0 24 24"><path d="M22,16V4A2,2 0 0,0 20,2H8A2,2 0 0,0 6,4V16A2,2 0 0,0 8,18H20A2,2 0 0,0 22,16M11,12L13.03,14.71L16,11L20,16H8M2,6V20A2,2 0 0,0 4,22H18V20H4V6H2Z" /></svg>
+                Galerie
+            </button>
+        </div>
+    </div>
+
+    <!-- MODIFIÉ : La carte de capture est maintenant cachée par défaut et a un bouton retour -->
+    <div id="capture-card" class="card hidden">
+        <div class="card-header">
+            <button class="back-to-menu-btn" title="Retour au menu">
+                 <svg viewBox="0 0 24 24"><path d="M20,11V13H8L13.5,18.5L12.08,19.92L4.16,12L12.08,4.08L13.5,5.5L8,11H20Z" /></svg>
+            </button>
+            <h1>Prendre une photo</h1>
+            <div class="header-placeholder"></div>
         </div>
         <div id="preview-view" class="hidden">
             <img id="photo-preview" alt="Aperçu de la photo">
@@ -73,30 +104,24 @@
         <p id="status"></p>
     </div>
 
-    <div id="gallery-card" class="card">
-        <div class="gallery-header">
+    <!-- MODIFIÉ : La carte de la galerie est maintenant cachée par défaut et a un bouton retour -->
+    <div id="gallery-card" class="card hidden">
+        <div class="card-header">
+             <button class="back-to-menu-btn" title="Retour au menu">
+                 <svg viewBox="0 0 24 24"><path d="M20,11V13H8L13.5,18.5L12.08,19.92L4.16,12L12.08,4.08L13.5,5.5L8,11H20Z" /></svg>
+            </button>
             <h1>Galerie</h1>
-            <button id="refresh-gallery-btn" class="hidden" title="Rafraîchir la galerie">
+            <button id="refresh-gallery-btn" title="Rafraîchir la galerie">
                 <svg viewBox="0 0 24 24">
                     <path d="M17.65,6.35C16.2,4.9 14.21,4 12,4A8,8 0 0,0 4,12A8,8 0 0,0 12,20C15.73,20 18.84,17.45 19.73,14H17.65C16.83,16.33 14.61,18 12,18A6,6 0 0,1 6,12A6,6 0 0,1 12,6C13.66,6 15.14,6.69 16.22,7.78L13,11H20V4L17.65,6.35Z" />
                 </svg>
             </button>
         </div>
-        <div id="gallery-placeholder">
-            <button id="show-gallery-btn">Afficher la galerie</button>
-        </div>
-        <p id="gallery-status" class="hidden"></p>
+        <p id="gallery-status"></p>
         <div id="image-grid"></div>
     </div>
     
     <div id="fullscreen-camera-view" class="hidden">
-        <!-- AJOUTÉ : Le bouton retour avec une icône SVG -->
-        <button id="back-btn-camera" title="Retour">
-            <svg viewBox="0 0 24 24">
-                <path d="M20,11V13H8L13.5,18.5L12.08,19.92L4.16,12L12.08,4.08L13.5,5.5L8,11H20Z" />
-            </svg>
-        </button>
-
         <video id="fullscreen-video" autoplay playsinline></video>
         <div id="fullscreen-controls">
             <div class="flex-placeholder"></div>
@@ -116,7 +141,16 @@
         document.addEventListener('DOMContentLoaded', () => {
             const SCRIPT_URL = "https://script.google.com/macros/s/AKfycbzbdC-60zvJpOXhWBIgV3kdkIjI1u5M0m-5tajQrpWbrMOHfeNYWuBcflraX_5T4rr4/exec";
 
-            const startView = document.getElementById('start-view');
+            // MODIFIÉ: Références aux nouvelles vues et boutons
+            const mainMenuCard = document.getElementById('main-menu-card');
+            const captureCard = document.getElementById('capture-card');
+            const galleryCard = document.getElementById('gallery-card');
+            
+            const mainBackBtn = document.getElementById('main-back-btn');
+            const mainCameraBtn = document.getElementById('main-camera-btn');
+            const mainGalleryBtn = document.getElementById('main-gallery-btn');
+            const backToMenuBtns = document.querySelectorAll('.back-to-menu-btn');
+
             const previewView = document.getElementById('preview-view');
             const photoPreview = document.getElementById('photo-preview');
             const statusMsg = document.getElementById('status');
@@ -125,22 +159,49 @@
             const canvas = document.getElementById('canvas');
             const fullscreenView = document.getElementById('fullscreen-camera-view');
             const fullscreenVideo = document.getElementById('fullscreen-video');
-            const openCameraBtn = document.getElementById('open-camera-btn');
             const sendBtn = document.getElementById('send');
             const retakeBtn = document.getElementById('retake');
             const snapFullscreenBtn = document.getElementById('snap-fullscreen-btn');
             const closeFullscreenBtn = document.getElementById('close-fullscreen-btn');
             const swapCameraBtn = document.getElementById('swap-camera-btn');
-            const showGalleryBtn = document.getElementById('show-gallery-btn');
-            const galleryPlaceholder = document.getElementById('gallery-placeholder');
             const refreshGalleryBtn = document.getElementById('refresh-gallery-btn');
-            
-            // AJOUTÉ : Référence au nouveau bouton
-            const backBtnCamera = document.getElementById('back-btn-camera');
 
             let photoDataUrl = null;
             let stream = null;
             let currentFacingMode = 'environment';
+            
+            /* MODIFIÉ: Logique de navigation */
+            function showMainMenu() {
+                mainMenuCard.classList.remove('hidden');
+                captureCard.classList.add('hidden');
+                galleryCard.classList.add('hidden');
+                previewView.classList.add('hidden'); // S'assurer que la preview est cachée
+                statusMsg.textContent = '';
+            }
+
+            function showCaptureFlow() {
+                mainMenuCard.classList.add('hidden');
+                galleryCard.classList.add('hidden');
+                captureCard.classList.remove('hidden');
+                openFullscreenCamera();
+            }
+            
+            async function showGalleryFlow() {
+                mainMenuCard.classList.add('hidden');
+                captureCard.classList.add('hidden');
+                galleryCard.classList.remove('hidden');
+                // Charger la galerie seulement si elle n'a pas déjà été chargée
+                if (imageGrid.innerHTML === '') {
+                    await loadGallery();
+                }
+            }
+            
+            mainBackBtn.addEventListener('click', () => {
+                window.history.back();
+            });
+            mainCameraBtn.addEventListener('click', showCaptureFlow);
+            mainGalleryBtn.addEventListener('click', showGalleryFlow);
+            backToMenuBtns.forEach(btn => btn.addEventListener('click', showMainMenu));
             
             const lazyLoadObserver = new IntersectionObserver((entries, observer) => {
                 entries.forEach(entry => {
@@ -154,10 +215,8 @@
             }, { rootMargin: '0px 0px 200px 0px' });
 
             async function loadGallery() {
-                refreshGalleryBtn.classList.remove('hidden');
                 refreshGalleryBtn.classList.add('loading');
                 refreshGalleryBtn.disabled = true;
-                galleryPlaceholder.classList.add('hidden');
                 galleryStatus.classList.remove('hidden');
                 galleryStatus.textContent = "Chargement des images...";
                 imageGrid.innerHTML = ''; 
@@ -170,6 +229,7 @@
                             galleryStatus.textContent = "Aucune photo dans la galerie.";
                         } else {
                             galleryStatus.textContent = "";
+                            galleryStatus.classList.add('hidden');
                             images.forEach(imgData => {
                                 const link = document.createElement('a');
                                 link.href = `https://drive.google.com/uc?export=view&id=${imgData.id}`;
@@ -198,7 +258,11 @@
                 try {
                     stream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: currentFacingMode } });
                     fullscreenVideo.srcObject = stream;
-                } catch (err) { statusMsg.textContent = `Erreur: Impossible d'accéder à la caméra (${currentFacingMode}).`; closeFullscreenCamera(); }
+                } catch (err) { 
+                    statusMsg.textContent = `Erreur: Impossible d'accéder à la caméra.`; 
+                    closeFullscreenCamera();
+                    showMainMenu(); // Retour au menu si la caméra échoue
+                }
             }
 
             function openFullscreenCamera() { fullscreenView.classList.remove('hidden'); startCameraStream(); }
@@ -211,20 +275,18 @@
                 context.drawImage(fullscreenVideo, 0, 0, canvas.width, canvas.height);
                 photoDataUrl = canvas.toDataURL('image/jpeg');
                 photoPreview.src = photoDataUrl;
-                startView.classList.add('hidden'); previewView.classList.remove('hidden');
+                previewView.classList.remove('hidden'); // Affiche la prévisualisation dans la carte de capture
                 closeFullscreenCamera();
             }
             
-            openCameraBtn.addEventListener('click', openFullscreenCamera);
-            closeFullscreenBtn.addEventListener('click', closeFullscreenCamera);
+            closeFullscreenBtn.addEventListener('click', () => {
+                closeFullscreenCamera();
+                showMainMenu(); // MODIFIÉ: Fermer la caméra ramène au menu principal
+            });
             
-            // AJOUTÉ : Le listener pour le bouton retour. Il fait la même chose que le bouton fermer.
-            backBtnCamera.addEventListener('click', closeFullscreenCamera);
-
             snapFullscreenBtn.addEventListener('click', takePicture);
             retakeBtn.addEventListener('click', openFullscreenCamera);
             swapCameraBtn.addEventListener('click', swapCamera);
-            showGalleryBtn.addEventListener('click', loadGallery);
             refreshGalleryBtn.addEventListener('click', loadGallery);
 
             sendBtn.addEventListener('click', async () => {
@@ -238,12 +300,18 @@
                         method: 'POST', redirect: 'follow', body: JSON.stringify(payload),
                         headers: { 'Content-Type': 'text/plain;charset=utf-8' },
                     });
+                    // MODIFIÉ: Après l'envoi, rafraîchit la galerie en arrière-plan et revient au menu
                     statusMsg.textContent = "✅ Photo envoyée !";
-                    previewView.classList.add('hidden'); startView.classList.remove('hidden');
-                    if (!galleryPlaceholder.classList.contains('hidden')) { await loadGallery(); }
-                    setTimeout(() => { statusMsg.textContent = ""; }, 2000);
-                } catch (error) { statusMsg.textContent = `❌ Erreur réseau.`;
-                } finally { sendBtn.disabled = false; retakeBtn.disabled = false; }
+                    setTimeout(() => { 
+                        showMainMenu();
+                        loadGallery(); // Rafraîchit la galerie pour la prochaine visite
+                    }, 1500);
+                } catch (error) { 
+                    statusMsg.textContent = `❌ Erreur réseau.`;
+                    sendBtn.disabled = false; retakeBtn.disabled = false;
+                } finally {
+                    // Les boutons sont réactivés implicitement par le changement de vue
+                }
             });
         });
     </script>
